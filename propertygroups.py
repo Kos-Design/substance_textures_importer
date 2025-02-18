@@ -1,10 +1,10 @@
+import bpy
 import json
 from pathlib import Path
-import bpy
-from bpy.props import (StringProperty, IntProperty, BoolProperty,EnumProperty)
+from bpy.props import (StringProperty,IntProperty,BoolProperty,EnumProperty)
 from bpy.types import PropertyGroup
-from bpy.utils import (register_class, unregister_class)
-from . propertieshandler import PropertiesHandler, props, node_links, lines,p_lines, set_wish,get_wish
+from bpy.utils import (register_class,unregister_class)
+from . propertieshandler import PropertiesHandler,props,node_links,lines,p_lines,set_wish,get_wish
 from . nodeshandler import NodeHandler
 
 propper = PropertiesHandler()
@@ -15,7 +15,6 @@ def line_on_up(self, context):
     propper.default_sockets(self)
     propper.safe_refresh()
     propper.wish = set_wish()
-    return
 
 def material_update_callback():
     if not props().replace_shader:
@@ -24,7 +23,7 @@ def material_update_callback():
     try:
         propper.mat = ndh.mat = bpy.context.object.active_material
         refresh_props(props(),bpy.context)
-    except :
+    except (TypeError,NameError,KeyError,ValueError,AttributeError,OverflowError):
         return
 
 def unregister_msgbus():
@@ -93,35 +92,31 @@ def target_list_cb(self,context):
     return targets
 
 def get_presets(self, context):
-    presets = [('0','-Select Preset-', ''),]
-    preset_directory = Path(bpy.utils.extension_path_user(f'{__package__}',path="stm_presets", create=True))
-    for file in sorted(preset_directory.glob("*.py")):
-        presets.append((f"{file}", f"{file.stem}", ""))
-    return presets
+    return propper.get_preset_list()
 
 def apply_preset(self,context):
     propper.read_preset()
 
-def custom_preset_enum_up(self, context):
+def preset_enum_up(self, context):
     apply_preset(self,context)
 
 def target_list_up(self,context):
     match self.target:
         case "selected_objects":
-            pass
+            set_operator_description("selected objects materials.")
         case "all_visible":
-            pass
+            set_operator_description("all visible objects materials.")
         case "all_objects":
-            pass
+            set_operator_description("all objects materials in the current viewlayer.")
         case "all_materials":
+            set_operator_description("all the materials in the blend.")
             self.only_active_mat = False
         case "active_obj":
             pass
-    return
 
-def set_operator_description(self, context):
-    target = "selected objects"
-    bpy.types.NODE_OT_stm_import_textures.bl_description = "Setup nodes and load textures maps on " + target
+def set_operator_description(target):
+    bpy.types.NODE_OT_stm_import_textures.bl_description = "Setup nodes and load textures\
+                                                             maps on \n" + target
     bpy.types.NODE_OT_stm_make_nodes.bl_description = "Setup Nodes on " + target
     bpy.types.NODE_OT_stm_assign_nodes.bl_description = "Load textures maps on " + target
     liste = [
@@ -133,7 +128,6 @@ def set_operator_description(self, context):
         laclasse = cls
         unregister_class(cls)
         register_class(laclasse)
-    return
 
 def split_rgb_up(self,context):
     if not (len(self.channels.socket) and len(self.channels.socket) == 3):
@@ -156,32 +150,54 @@ def include_ngroups_up(self, context):
 def enum_sockets_cb(self, context):
     inp_list = propper.get_sockets_enum_items()
     if not inp_list or len(inp_list) < 5:
-        return [('no_socket', '-- Unmatched Socket --', ''), ('Base Color', 'Base Color', ''), ('Metallic', 'Metallic', ''), ('Roughness', 'Roughness', ''), ('IOR', 'IOR', ''), ('Alpha', 'Alpha', ''), ('Normal', 'Normal', ''), ('Diffuse Roughness', 'Diffuse Roughness', ''), ('Subsurface Weight', 'Subsurface Weight', ''), ('Subsurface Radius', 'Subsurface Radius', ''), ('Subsurface Scale', 'Subsurface Scale', ''), ('Subsurface IOR', 'Subsurface IOR', ''), ('Subsurface Anisotropy', 'Subsurface Anisotropy', ''), ('Specular IOR Level', 'Specular IOR Level', ''), ('Specular Tint', 'Specular Tint', ''), ('Anisotropic', 'Anisotropic', ''), ('Anisotropic Rotation', 'Anisotropic Rotation', ''), ('Tangent', 'Tangent', ''), ('Transmission Weight', 'Transmission Weight', ''), ('Coat Weight', 'Coat Weight', ''), ('Coat Roughness', 'Coat Roughness', ''), ('Coat IOR', 'Coat IOR', ''), ('Coat Tint', 'Coat Tint', ''), ('Coat Normal', 'Coat Normal', ''), ('Sheen Weight', 'Sheen Weight', ''), ('Sheen Roughness', 'Sheen Roughness', ''), ('Sheen Tint', 'Sheen Tint', ''), ('Emission Color', 'Emission Color', ''), ('Emission Strength', 'Emission Strength', ''), ('Thin Film Thickness', 'Thin Film Thickness', ''), ('Thin Film IOR', 'Thin Film IOR', ''), ('Disp Vector', 'Disp Vector', ''), ('Displacement', 'Displacement', ''),('Ambient Occlusion','Ambient Occlusion',''),]
+        return [('no_socket','-- Unmatched Socket --',''),('Base Color','Base Color',''),
+                 ('Metallic','Metallic',''),('Roughness','Roughness',''),
+                  ('IOR','IOR',''),('Alpha','Alpha',''),('Normal','Normal',''),
+                   ('Diffuse Roughness','Diffuse Roughness',''),
+                   ('Subsurface Weight','Subsurface Weight',''),
+                   ('Subsurface Radius','Subsurface Radius',''),
+                    ('Subsurface Scale','Subsurface Scale',''),
+                    ('Subsurface IOR','Subsurface IOR',''),
+                     ('Subsurface Anisotropy','Subsurface Anisotropy',''),
+                      ('Specular IOR Level','Specular IOR Level',''),
+                      ('Specular Tint','Specular Tint',''),('Anisotropic','Anisotropic',''),
+                      ('Anisotropic Rotation','Anisotropic Rotation',''),('Tangent','Tangent',''),
+                      ('Transmission Weight','Transmission Weight',''),
+                         ('Coat Weight','Coat Weight',''),('Coat Roughness','Coat Roughness',''),
+                          ('Coat IOR','Coat IOR',''),('Coat Tint','Coat Tint',''),
+                           ('Coat Normal','Coat Normal',''),('Sheen Weight','Sheen Weight',''),
+                            ('Sheen Roughness','Sheen Roughness',''),('Sheen Tint','Sheen Tint',''),
+                             ('Emission Color','Emission Color',''),
+                             ('Emission Strength','Emission Strength',''),
+                              ('Thin Film Thickness','Thin Film Thickness',''),
+                              ('Thin Film IOR','Thin Film IOR',''),
+                               ('Disp Vector','Disp Vector',''),('Displacement','Displacement',''),
+                                ('Ambient Occlusion','Ambient Occlusion',''),]
     return inp_list
 
 def enum_sockets_up(self, context):
-    if self.input_sockets not in [sock[0] for sock in propper.get_sockets_enum_items()]:
+    if self.input_sockets not in propper.sicks():
         self['input_sockets'] = 0
         return
     for line in p_lines():
         if line.split_rgb:
-            for sock in line.channels.socket:
-                if sock.input_sockets in self.input_sockets and not 'no_socket' in self.input_sockets:
-                    sock['input_sockets'] = 0
+            for sk in line.channels.socket:
+                if sk.input_sockets in self.input_sockets and not 'no_socket' in self.input_sockets:
+                    sk['input_sockets'] = 0
                     line.auto_mode = False
         elif line.input_sockets in self.input_sockets and not 'no_socket' in self.input_sockets and not line == self:
             line['input_sockets'] = 0
             line.auto_mode = False
 
 def ch_sockets_up(self, context):
-    if not self.input_sockets in [sock[0] for sock in propper.get_sockets_enum_items()]:
+    if not self.input_sockets in propper.sicks():
         self['input_sockets'] = 0
         return
     for line in p_lines():
         if line.split_rgb:
-            for sock in line.channels.socket:
-                if sock.input_sockets in self.input_sockets and not 'no_socket' in self.input_sockets and not self == sock:
-                    sock['input_sockets'] = 0
+            for sk in line.channels.socket:
+                if sk.input_sockets in self.input_sockets and not 'no_socket' in self.input_sockets and not self == sk:
+                    sk['input_sockets'] = 0
                     line.auto_mode = False
         elif line.input_sockets in self.input_sockets and not 'no_socket' in self.input_sockets:
             line['input_sockets'] = 0
@@ -211,14 +227,17 @@ def advanced_mode_up(self, context):
     propper.wish = set_wish()
 
 def usr_dir_up(self, context):
+    if self.lines_from_files:
+        propper.synch_names()
     self.dir_content = ""
     if not Path(self.usr_dir).is_dir():
         self.usr_dir = str(Path(self.usr_dir).parent)
         if not Path(self.usr_dir).is_dir():
-            self.usr_dir = f"{(Path(__file__).parent)}"
-    dir_content = [x.name for x in Path(self.usr_dir).glob('*.*') ]
+            self.usr_dir = Path(bpy.utils.extension_path_user(f'{__package__}', create=True))
+    exts = set(bpy.path.extensions_image)
+    dir_content = [x.name for x in Path(self.usr_dir).glob('*.*') if x.suffix.lower() in exts]
     if len(dir_content) :
-        self.dir_content = json.dumps((dict(zip(range(len(dir_content)), dir_content))))
+        self.dir_content = json.dumps(dir_content)
     if self.include_ngroups:
         node_links().clear()
         include_ngroups_up(self,context)
@@ -276,7 +295,16 @@ class ShaderLinks(PropertyGroup):
     input_sockets: StringProperty(
         name="",
         description="Shader input sockets for this texture node",
-        default='{"0": "Base Color", "1": "Metallic", "2": "Roughness", "3": "IOR", "4": "Alpha", "5": "Normal", "6": "Diffuse Roughness", "7": "Subsurface Weight", "8": "Subsurface Radius", "9": "Subsurface Scale", "10": "Subsurface IOR", "11": "Subsurface Anisotropy", "12": "Specular IOR Level", "13": "Specular Tint", "14": "Anisotropic", "15": "Anisotropic Rotation", "16": "Tangent", "17": "Transmission Weight", "18": "Coat Weight", "19": "Coat Roughness", "20": "Coat IOR", "21": "Coat Tint", "22": "Coat Normal", "23": "Sheen Weight", "24": "Sheen Roughness", "25": "Sheen Tint", "26": "Emission Color", "27": "Emission Strength", "28": "Thin Film Thickness", "29": "Thin Film IOR"}'
+        default='{"0": "Base Color", "1": "Metallic", "2": "Roughness",\
+         "3": "IOR", "4": "Alpha", "5": "Normal", "6": "Diffuse Roughness",\
+          "7": "Subsurface Weight", "8": "Subsurface Radius",\
+           "9": "Subsurface Scale", "10": "Subsurface IOR",\
+            "11": "Subsurface Anisotropy", "12": "Specular IOR Level",\
+             "13": "Specular Tint", "14": "Anisotropic", "15": "Anisotropic Rotation", "16": "Tangent",\
+              "17": "Transmission Weight", "18": "Coat Weight",\
+               "19": "Coat Roughness", "20": "Coat IOR", "21": "Coat Tint", "22": "Coat Normal",\
+                "23": "Sheen Weight", "24": "Sheen Roughness", "25": "Sheen Tint", "26": "Emission Color",\
+                 "27": "Emission Strength", "28": "Thin Film Thickness", "29": "Thin Film IOR"}'
     )
     outputsockets: StringProperty(
         name="lint of output sockets",
@@ -380,7 +408,7 @@ class StmProps(PropertyGroup):
         default=True
     )
     dir_content: StringProperty(
-        name="Setavalue",
+        name="list_dir_content",
         description="content of selected texture folder",
         default=""
     )
@@ -399,7 +427,17 @@ class StmProps(PropertyGroup):
     sockets: StringProperty(
         name="all_inputs",
         description="Json string of all inputs sockets, used internally for preset saving",
-        default='{"0": "Base Color", "1": "Metallic", "2": "Roughness", "3": "IOR", "4": "Alpha", "5": "Normal", "6": "Diffuse Roughness", "7": "Subsurface Weight", "8": "Subsurface Radius", "9": "Subsurface Scale", "10": "Subsurface IOR", "11": "Subsurface Anisotropy", "12": "Specular IOR Level", "13": "Specular Tint", "14": "Anisotropic", "15": "Anisotropic Rotation", "16": "Tangent", "17": "Transmission Weight", "18": "Coat Weight", "19": "Coat Roughness", "20": "Coat IOR", "21": "Coat Tint", "22": "Coat Normal", "23": "Sheen Weight", "24": "Sheen Roughness", "25": "Sheen Tint", "26": "Emission Color", "27": "Emission Strength", "28": "Thin Film Thickness", "29": "Thin Film IOR"}'
+        default='{  "0": "Base Color", "1": "Metallic", "2": "Roughness",\
+                    "3": "IOR", "4": "Alpha", "5": "Normal", "6": "Diffuse Roughness",\
+                    "7": "Subsurface Weight", "8": "Subsurface Radius",\
+                    "9": "Subsurface Scale", "10": "Subsurface IOR",\
+                    "11": "Subsurface Anisotropy", "12": "Specular IOR Level",\
+                    "13": "Specular Tint", "14": "Anisotropic", "15": "Anisotropic Rotation",\
+                    "16": "Tangent", "17": "Transmission Weight", "18": "Coat Weight",\
+                    "19": "Coat Roughness", "20": "Coat IOR", "21": "Coat Tint",\
+                    "22": "Coat Normal", "23": "Sheen Weight", "24": "Sheen Roughness",\
+                    "25": "Sheen Tint", "26": "Emission Color", "27": "Emission Strength",\
+                    "28": "Thin Film Thickness", "29": "Thin Film IOR"}'
     )
     skip_normals: BoolProperty(
         name="Skip normal map detection",
@@ -426,9 +464,16 @@ class StmProps(PropertyGroup):
         items=shaders_list_cb,
         update=shaders_list_up
     )
+    lines_from_files: BoolProperty(
+        description=" Attempt to auto rename the map lines names according to\
+                    \n the images names detected in the texture folder when updating the directory\
+                    \n if they match the current material name.",
+        default=True,
+    )
     advanced_mode: BoolProperty(
         description=" Allows Manual setup of the Maps filenames, \
-                    \n  (Tick the checkbox between Map Name and Sockets to enable manual file selection)",
+                    \n  (Tick the checkbox between Map Name and Sockets \
+                                        to enable manual file selection)",
         default=False,
         update=advanced_mode_up
     )
@@ -451,4 +496,4 @@ class StmProps(PropertyGroup):
         description="Name of the preset.",
         default="New Preset"
     )
-    custom_preset_enum: EnumProperty(name="Presets",items=get_presets,update=custom_preset_enum_up)
+    preset_enum: EnumProperty(name="Presets",items=get_presets,update=preset_enum_up)

@@ -1,18 +1,29 @@
-from pathlib import Path
 import bpy
+from pathlib import Path
 from bpy.types import Operator
 from bpy.props import StringProperty,BoolProperty
 from . propertieshandler import PropertiesHandler,props,texture_importer,texture_index,lines
 from . nodeshandler import NodeHandler
-from . panels import draw_panel
+from . panels import draw_panel,NODE_PT_stm_options
 
 propper = PropertiesHandler()
 ndh = NodeHandler()
+
+def menu_func(self, context):
+    self.layout.operator("import.stm_window", text="Substance Textures...")
 
 def ShowMessageBox(message="", title="Message", icon='INFO'):
     def draw(self, context):
         self.layout.label(text=message)
     bpy.context.window_manager.popup_menu(draw, title=title, icon=icon)
+
+def get_directory(self,context):
+    return self.directory
+
+def set_directory(self,value):
+    #only applied when using the import button :(
+    self["directory"] = value
+    props().usr_dir = self["directory"]
 
 class SubOperatorPoll():
     bl_options = {'INTERNAL', 'UNDO'}
@@ -29,8 +40,8 @@ class OperatorPoll():
     @classmethod
     def poll(cls, context):
         try:
-            return len(ndh.get_target_mats(context))
-        except:
+            return len(ndh.get_target_mats(context))>0
+        except (TypeError,NameError,KeyError,ValueError,AttributeError,OverflowError):
             return False
 
 
@@ -51,6 +62,7 @@ class NODE_OT_stm_del_substance_texture(SubOperatorPoll,Operator):
         propper.del_panel_line()
         return {'FINISHED'}
 
+
 class NODE_OT_stm_reset_substance_textures(SubOperatorPoll,Operator):
     bl_idname = "node.stm_reset_substance_textures"
     bl_label = "Reset textures names"
@@ -70,7 +82,9 @@ class NODE_OT_stm_make_nodes(OperatorPoll,Operator):
     def execute(self, context):
         self.report({'INFO'}, ("\n").join(ndh.report_content))
         ndh.handle_nodes(True)
-        ShowMessageBox("Check Shader nodes panel", "Nodes created", 'FAKE_USER_ON')
+        ShowMessageBox("Check Shader nodes panel",
+                         "Nodes created",
+                         'FAKE_USER_ON')
         return {'FINISHED'}
 
 
@@ -82,8 +96,10 @@ class NODE_OT_stm_assign_nodes(OperatorPoll,Operator):
     def execute(self, context):
         ndh.handle_nodes()
         self.report({'INFO'}, ("\n").join(ndh.report_content))
-        img_count = len([line for line in ndh.report_content if "assigned" in line])
-        ShowMessageBox(f"{img_count} matching images loaded", "Images assigned to respective nodes", 'FAKE_USER_ON')
+        img_count = len([l for l in ndh.report_content if "assigned" in l])
+        ShowMessageBox(f"{img_count} matching images loaded",
+                         "Images assigned to respective nodes",
+                         'FAKE_USER_ON')
         return {'FINISHED'}
 
 
@@ -97,6 +113,7 @@ class NODE_OT_stm_import_textures(OperatorPoll,Operator):
             ndh.handle_nodes(not i)
             self.report({'INFO'},("\n").join(ndh.report_content) )
         return {'FINISHED'}
+
 
 class NODE_OT_stm_move_line(Operator):
     bl_idname = "node.stm_move_line"
@@ -128,7 +145,7 @@ class NODE_OT_stm_add_preset(SubOperatorPoll,Operator):
         if not preset_name:
             self.report({'ERROR'}, "Preset name cannot be empty")
             return {'CANCELLED'}
-        p_file = Path(NODE_OT_stm_presets_dialog.preset_directory).joinpath(preset_name)
+        p_file = Path(NODE_OT_stm_presets_dialog.p_dir).joinpath(preset_name)
         filer = f"{p_file}{'.py' if 'py' not in p_file.suffix else ''}"
         with open(filer, "w", encoding="utf-8") as w:
             w.write(propper.fill_settings())
@@ -142,7 +159,7 @@ class NODE_OT_stm_presets_dialog(SubOperatorPoll,Operator):
     bl_label = "STM Presets..."
     bl_description = 'Open preset panel'
 
-    preset_directory = Path(bpy.utils.extension_path_user(f'{__package__}',path="stm_presets", create=True))
+    p_dir = Path(bpy.utils.extension_path_user(f'{__package__}',path="stm_presets", create=True))
 
     def execute(self, context):
         return {'FINISHED'}
@@ -157,8 +174,8 @@ class NODE_OT_stm_presets_dialog(SubOperatorPoll,Operator):
         layout = self.layout
         layout.label(text="Presets:")
         layout.separator()
-        if self.preset_directory.exists():
-            files = sorted(self.preset_directory.glob("*.py"))
+        if self.p_dir.exists():
+            files = sorted(self.p_dir.glob("*.py"))
             for file in files:
                 row = layout.split(factor=0.85, align=True)
                 op = row.operator("node.stm_execute_preset", text=file.stem,emboss=False)
@@ -184,6 +201,7 @@ class NODE_OT_stm_delete_preset(SubOperatorPoll,Operator):
         preset_path = Path(self.preset_file)
         if preset_path.exists():
             preset_path.unlink()
+            props()['preset_enum']= 0
             self.report({'INFO'}, f"Deleted preset: {preset_path.name}")
         else:
             self.report({'ERROR'}, "Preset not found")
@@ -201,12 +219,12 @@ class NODE_OT_stm_execute_preset(SubOperatorPoll,Operator):
         if not self.preset_file:
             self.report({'ERROR'}, "Preset name cannot be empty")
             return {'CANCELLED'}
-        filer = f"{Path(NODE_OT_stm_presets_dialog.preset_directory).joinpath(self.preset_file)}"
-        try:
-            props().custom_preset_enum = filer
+        filer = f"{Path(NODE_OT_stm_presets_dialog.p_dir).joinpath(self.preset_file)}"
+        if filer in [p[0] for p in propper.get_preset_list()]:
+            props().preset_enum = filer
             return {'FINISHED'}
-        except Exception:
-            return {'CANCELLED'}
+        return {'CANCELLED'}
+
 
 class NODE_OT_add_preset_popup(SubOperatorPoll,Operator):
     bl_idname = "node.add_preset_popup"
@@ -219,11 +237,11 @@ class NODE_OT_add_preset_popup(SubOperatorPoll,Operator):
         if not self.preset_name:
             self.report({'ERROR'}, "Preset name cannot be empty")
             return {'CANCELLED'}
-        p_file = Path(NODE_OT_stm_presets_dialog.preset_directory).joinpath(self.preset_name)
+        p_file = Path(NODE_OT_stm_presets_dialog.p_dir).joinpath(self.preset_name)
         filer = f"{p_file}{'.py' if 'py' not in p_file.suffix else ''}"
         with open(filer, "w", encoding="utf-8") as w:
             w.write(propper.fill_settings())
-        props().custom_preset_enum = filer
+        props().preset_enum = filer
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -233,16 +251,17 @@ class NODE_OT_add_preset_popup(SubOperatorPoll,Operator):
         layout = self.layout
         layout.prop(self, "preset_name")
 
-def sync_filepath(self,context):
-    props().usr_dir = self.directory
+class NODE_OT_stm_fill_names(SubOperatorPoll,Operator):
+    bl_idname = "node.stm_fill_names"
+    bl_label = "Synch line names with files"
+    bl_description = 'Rename panel lines from keywords detected in the texture files'
 
-def get_directory(self,context):
-    return self.directory
+    preset_file: StringProperty()
 
-def set_directory(self,value):
-    #only applied when using the import button :(
-    self["directory"] = value
-    props().usr_dir = self["directory"]
+    def execute(self, context):
+        propper.synch_names()
+        return {'FINISHED'}
+        #return {'CANCELLED'}
 
 class IMPORT_OT_stm_window(Operator):
     bl_idname = "import.stm_window"
@@ -251,14 +270,14 @@ class IMPORT_OT_stm_window(Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     directory: StringProperty(subtype="DIR_PATH",set=set_directory)
-    show_options: BoolProperty(name="Options", default=True)
-    preset_directory = NODE_OT_stm_presets_dialog.preset_directory
+    op: BoolProperty(name="Options", default=True)
+    p_dir = NODE_OT_stm_presets_dialog.p_dir
 
     @classmethod
     def poll(cls, context):
         try:
-            return len(bpy.data.materials) and props()
-        except:
+            return len(bpy.data.materials) > 0 and props()
+        except (TypeError,NameError,KeyError,ValueError,AttributeError,OverflowError):
             return False
 
     def execute(self, context):
@@ -273,22 +292,15 @@ class IMPORT_OT_stm_window(Operator):
 
     def draw(self, context):
         layout = self.layout
-        space = context.space_data
-        params = space.params
-        current_directory = params.directory
-        #tempted to do this since I didn't find how to get it from msgbus
-        #if props().usr_dir != current_directory.decode('utf-8'):
-        #    props()['usr_dir'] = current_directory.decode('utf-8')
-        layout.label(text="<<--- Select a folder to import textures")
-        if self.preset_directory.exists():
+        if self.p_dir.exists():
             row = layout.row(align=True)
             row.alignment = 'LEFT'
             split = row.split(factor=0.85, align=True)
-            split.prop(props(), "custom_preset_enum", text="")
+            split.prop(props(), "preset_enum", text="")
             buttons_row = split.row(align=True)
             buttons_row.operator("node.add_preset_popup", text="", icon="ADD")
             del_op = buttons_row.operator("node.stm_delete_preset", text="", icon="REMOVE")
-            del_op.preset_file = props().custom_preset_enum
+            del_op.preset_file = props().preset_enum
 
         row = layout.row()
         row.prop(props(), "target")
@@ -302,31 +314,6 @@ class IMPORT_OT_stm_window(Operator):
         row.operator("node.stm_make_nodes",text="Setup Nodes")
         row = layout.row(align = True)
         row.alignment = 'LEFT'
-        row.prop(self, "show_options", icon="TRIA_DOWN" if self.show_options else "TRIA_RIGHT", emboss=False)
-        if self.show_options:
-            box = layout.box()
-            row = box.row(align = True)
-            row.prop(props(), "replace_shader", text="Replace Shader",)
-            row = row.split()
-            if props().replace_shader :
-                row.prop(props(), "shaders_list", text="")
-            row = box.row()
-            row.prop(props(), "skip_normals", )
-            row = box.row()
-            row.prop(props(), "mode_opengl", )
-            row = box.row()
-            row.prop(props(), "include_ngroups", text="Enable Custom Shaders", )
-            row = box.row()
-            row.prop(props(), "clear_nodes", text="Clear nodes from material", )
-            row = box.row()
-            row.prop(props(), "tweak_levels", text="Attach Curves and Ramps ", )
-            row = box.row()
-            row.prop(props(), "only_active_mat", text="Only active Material",)
-            row = box.row()
-            row.prop(props(), "dup_mat_compatible", text="Duplicated material compatibility",)
-            row = box.row()
-            row.separator()
-
-
-def menu_func(self, context):
-    self.layout.operator(IMPORT_OT_stm_window.bl_idname, text="Substance Textures...")
+        row.prop(self, "op", icon="TRIA_DOWN" if self.op else "TRIA_RIGHT", emboss=False)
+        if self.op:
+            NODE_PT_stm_options.draw(self, context)

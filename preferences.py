@@ -1,12 +1,12 @@
 import bpy
-
-from bpy.props import (StringProperty, IntProperty, BoolProperty,PointerProperty, CollectionProperty,EnumProperty)
-
+from bpy.props import (StringProperty, IntProperty, BoolProperty,
+                        PointerProperty, CollectionProperty,EnumProperty)
 from bpy.types import (PropertyGroup, UIList,AddonPreferences)
-
 from . propertieshandler import PropertiesHandler, set_wish
-
-from . propertygroups import StmProps, enum_sockets_cb, auto_mode_up, ch_sockets_up, enum_sockets_up, manual_up, split_rgb_up, line_on_up, NodesLinks, ShaderLinks
+from . propertygroups import (StmProps, enum_sockets_cb, auto_mode_up,
+                                ch_sockets_up, enum_sockets_up, manual_up,
+                                split_rgb_up, line_on_up, NodesLinks, ShaderLinks)
+from . panels import draw_panel,NODE_PT_stm_options
 
 propper = PropertiesHandler()
 
@@ -110,7 +110,8 @@ class StmPanelLines(PropertyGroup):
     )
     split_rgb: BoolProperty(
         name="Split rgb channels",
-        description="Split the RGB channels of the target image to plug them into individual sockets",
+        description="Split the RGB channels of the target image \
+                        to plug them into individual sockets",
         default=False,
         update=split_rgb_up
     )
@@ -133,8 +134,8 @@ class StmShaders(PropertyGroup):
 
 class NODE_UL_stm_list(UIList):
     """
-    Same behaviour as normal UI list but this workaround allows the triggering
-    of an update function when changing item names in UI Panel by double-clicking on it,
+    Same behaviour as normal UI list but allows the triggering
+    of an update function when item names are modified in UI Panel,
     whereas normal UI lists do not!
     --could be a candidate for a bugreport--
     """
@@ -142,7 +143,8 @@ class NODE_UL_stm_list(UIList):
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if item:
-            layout.prop(item, "name", text="", emboss=False, icon=f"SEQUENCE_COLOR_0{((index+3)%9+1)}")
+            layout.prop(item, "name", text="", emboss=False,
+                        icon=f"SEQUENCE_COLOR_0{((index+3)%9+1)}")
 
 
 class StmAddonPreferences(AddonPreferences):
@@ -151,24 +153,18 @@ class StmAddonPreferences(AddonPreferences):
     maps: bpy.props.PointerProperty(type=StmPanelLiner)
     node_links: CollectionProperty(type=NodesLinks)
     shader_links: CollectionProperty(type=ShaderLinks)
-    display_in_shadernodes_editor: BoolProperty(default=True,description="uncheck this option to not display the Extension panel in the Shader Nodes Editor Sidebar. It will remain accessible via the File > Import > Substance Textures menu ")
+    display_in_editor: BoolProperty(
+                        default=True,
+                        description="Uncheck this option to hide the Extension panel\
+                                     from the Shader Nodes Editor Sidebar. \
+                                    \n It will remain available in the File menu\
+                                     > Import > Substance Textures")
     props: bpy.props.PointerProperty(type=StmProps)
 
     def draw(self, context):
         layout = self.layout
+        layout.prop(self.props, 'usr_dir',text="Textures folder:")
         layout.label(text="Default maps:")
-        row = layout.row()
-        row.template_list(
-            "NODE_UL_stm_list", "Textures",
-            self.maps, "textures",
-            self.maps, "texture_index",
-            type="GRID",
-            columns=4,
-        )
-        button_col = row.column(align=True)
-        button_col.operator("node.stm_add_item", icon="ADD", text="")
-        button_col.operator("node.stm_remove_item", icon="REMOVE", text="")
-        button_col.separator(factor=3)
-
-        button_col.operator("node.stm_reset_substance_textures", icon="FILE_REFRESH", text="")
-        layout.prop(self,'display_in_shadernodes_editor',text="Display Panel in Shader Nodes Editor")
+        draw_panel(self,context)
+        NODE_PT_stm_options.draw(self, context)
+        layout.prop(self,'display_in_editor',text="Display Panel in Shader Nodes Editor")

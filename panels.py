@@ -1,6 +1,52 @@
+import bpy
 from bpy.types import Panel
 from bl_ui.utils import PresetPanel
 from . propertieshandler import props, texture_importer, texture_index, lines
+
+def draw_panel(self,context):
+    layout = self.layout
+    row = layout.row()
+    row.template_list(
+        "NODE_UL_stm_list", "Textures",
+        texture_importer(), "textures",
+        texture_importer(), "texture_index",
+        type="GRID",
+        columns=1,
+        rows=6,
+    )
+    button_col = row.column(align=True)
+    button_col.operator("node.stm_add_item", icon="ADD", text="")
+    button_col.operator("node.stm_remove_item", icon="REMOVE", text="")
+    button_col.separator(factor=.5)
+    button_col.operator("node.stm_move_line", icon="TRIA_UP", text="").down= False
+    button_col.operator("node.stm_move_line", icon="TRIA_DOWN", text="").down= True
+    button_col.separator(factor=.5)
+    button_col.operator("node.stm_fill_names", icon="SETTINGS", text="")
+    button_col.separator(factor=2)
+    button_col.operator("node.stm_reset_substance_textures", icon="MEMORY", text="")
+    if lines() and texture_index() < len(lines()):
+        item = lines()[texture_index()]
+        layout.prop(item, "line_on")
+        sub_layout = layout.column()
+        sub_layout.enabled = item.line_on
+        sub_layout.prop(item, "auto_mode")
+        sub_layout.prop(item, "split_rgb")
+        if item.split_rgb:
+            if item.channels.socket and item.channels.sockets_index < len(item.channels.socket):
+                sl = sub_layout.column()
+                sl.enabled = not item.auto_mode and item.line_on
+                for i,sk in enumerate(item.channels.socket):
+                    sl.prop(sk, "input_sockets",text=sk.name,icon=f"SEQUENCE_COLOR_0{((i*3)%9+1)}")
+        if props().advanced_mode :
+            sub_sub_layout = sub_layout.column()
+            sub_sub_layout.prop(item, "manual")
+            if item.manual :
+                sub_sub_sub_layout = sub_sub_layout.column()
+                sub_sub_sub_layout.prop(item, "file_name")
+        if not item.split_rgb:
+            sub_layout_2 = layout.column()
+            sub_layout_2.enabled = not item.auto_mode and item.line_on
+            sub_layout_2.prop(item, "input_sockets")
 
 class TexImporterPanel():
     bl_context = "material"
@@ -11,8 +57,8 @@ class TexImporterPanel():
     @classmethod
     def poll(cls, context):
         try:
-            return context.preferences.addons[__package__].preferences.display_in_shadernodes_editor
-        except:
+            return context.preferences.addons[__package__].preferences.display_in_editor
+        except (TypeError,NameError,KeyError,ValueError,AttributeError,OverflowError):
             return False
 
 
@@ -28,9 +74,8 @@ class NODE_PT_stm_importpanel(TexImporterPanel, Panel):
     bl_label = "Substance Texture Importer"
 
     def draw_header_preset(self, _context):
-        layout = self.layout
-        layout.operator("node.stm_presets_dialog", text="",icon='PRESET',emboss=False)  # Opens the persistent dialog
-
+        l = self.layout
+        l.operator("node.stm_presets_dialog", text="",icon='PRESET',emboss=False)
 
     def draw(self, context):
         layout = self.layout
@@ -49,47 +94,6 @@ class NODE_PT_stm_params(TexImporterPanel, Panel):
         row = layout.row()
         row.prop(props(), "usr_dir")
 
-def draw_panel(self,context):
-    layout = self.layout
-    row = layout.row()
-    row.template_list(
-        "NODE_UL_stm_list", "Textures",
-        texture_importer(), "textures",
-        texture_importer(), "texture_index",
-        type="GRID",
-        columns=1,
-    )
-    button_col = row.column(align=True)
-    button_col.operator("node.stm_add_item", icon="ADD", text="")
-    button_col.operator("node.stm_remove_item", icon="REMOVE", text="")
-    button_col.separator(factor=1)
-    button_col.operator("node.stm_move_line", icon="TRIA_UP", text="").down= False
-    button_col.operator("node.stm_move_line", icon="TRIA_DOWN", text="").down= True
-    button_col.separator(factor=2)
-    button_col.operator("node.stm_reset_substance_textures", icon="FILE_REFRESH", text="")
-    if lines() and texture_index() < len(lines()):
-        item = lines()[texture_index()]
-        layout.prop(item, "line_on")
-        sub_layout = layout.column()
-        sub_layout.enabled = item.line_on
-        sub_layout.prop(item, "auto_mode")
-        sub_layout.prop(item, "split_rgb")
-        if item.split_rgb:
-            if item.channels.socket and item.channels.sockets_index < len(item.channels.socket):
-                sub_layout_1 = sub_layout.column()
-                sub_layout_1.enabled = not item.auto_mode and item.line_on
-                for i,sock in enumerate(item.channels.socket):
-                    sub_layout_1.prop(sock, "input_sockets",text=sock.name,icon=f"SEQUENCE_COLOR_0{((i*3)%9+1)}")
-        if props().advanced_mode :
-            sub_sub_layout = sub_layout.column()
-            sub_sub_layout.prop(item, "manual")
-            if item.manual :
-                sub_sub_sub_layout = sub_sub_layout.column()
-                sub_sub_sub_layout.prop(item, "file_name")
-        if not item.split_rgb:
-            sub_layout_2 = layout.column()
-            sub_layout_2.enabled = not item.auto_mode and item.line_on
-            sub_layout_2.prop(item, "input_sockets")
 
 class NODE_PT_stm_panel_liner(TexImporterPanel,Panel):
     bl_label = "Textures:"
@@ -134,6 +138,7 @@ class NODE_PT_stm_buttons(TexImporterPanel, Panel):
         row.separator()
         row.operator("node.stm_make_nodes")
 
+
 class NODE_PT_stm_options(TexImporterPanel, Panel):
 
     bl_idname = "NODE_PT_stm_options"
@@ -163,5 +168,7 @@ class NODE_PT_stm_options(TexImporterPanel, Panel):
         row.prop(props(), "only_active_mat", text="Only active Material",)
         row = layout.row()
         row.prop(props(), "dup_mat_compatible", text="Duplicated material compatibility",)
+        row = layout.row()
+        row.prop(props(), "lines_from_files", text="Map names from files",)
         row = layout.row()
         row.separator()

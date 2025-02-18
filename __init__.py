@@ -15,18 +15,20 @@ import bpy
 from . propertygroups import ( ShaderLinks, NodesLinks, StmProps,register_msgbus,unregister_msgbus)
 
 from . operators import ( NODE_OT_stm_execute_preset,NODE_OT_stm_reset_substance_textures,
-                          NODE_OT_stm_make_nodes, NODE_OT_stm_assign_nodes,menu_func,NODE_OT_stm_move_line,
-                          NODE_OT_stm_add_substance_texture,NODE_OT_stm_delete_preset,NODE_OT_stm_presets_dialog,
+                          NODE_OT_stm_make_nodes, NODE_OT_stm_assign_nodes,menu_func,
+                          NODE_OT_stm_move_line, NODE_OT_stm_add_substance_texture,
+                          NODE_OT_stm_delete_preset,NODE_OT_stm_presets_dialog,NODE_OT_stm_fill_names,
                           NODE_OT_stm_import_textures,IMPORT_OT_stm_window,NODE_OT_add_preset_popup,
                           NODE_OT_stm_add_preset,NODE_OT_stm_del_substance_texture,
                           )
 
 from . panels import (  NODE_PT_stm_presets, NODE_PT_stm_importpanel, NODE_PT_stm_panel_liner,
-                        NODE_PT_stm_prefs, NODE_PT_stm_options, NODE_PT_stm_params, NODE_PT_stm_buttons,
+                        NODE_PT_stm_prefs, NODE_PT_stm_options, NODE_PT_stm_params,
+                        NODE_PT_stm_buttons,
                         )
 
-from . preferences import (StmAddonPreferences, StmPanelLiner, NODE_UL_stm_list, StmPanelLines,init_prefs,
-                             StmChannelSocket, StmChannelSockets,StmShaders, StmNodes,)
+from . preferences import (StmAddonPreferences, StmPanelLiner, NODE_UL_stm_list, StmPanelLines,
+                            init_prefs, StmChannelSocket, StmChannelSockets,StmShaders, StmNodes,)
 
 classes = (
     StmProps,
@@ -39,6 +41,7 @@ classes = (
     NODE_OT_stm_presets_dialog,
     NODE_OT_stm_add_preset,
     NODE_PT_stm_presets,
+    NODE_OT_stm_fill_names,
     NODE_OT_stm_import_textures,
     NODE_OT_stm_delete_preset,
     NODE_OT_stm_add_substance_texture,

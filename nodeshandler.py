@@ -173,7 +173,7 @@ class NodeHandler(MaterialHolder):
     def check_split_rgb(self,line):
         if line.split_rgb:
             self.separate_rgb = self.nodes.new(type="ShaderNodeSeparateColor")
-            self.separate_rgb.name=f"STM_splitter_{line.name}"
+            self.separate_rgb.name=f"STM_split_{line.name}"
             self.separate_rgb.label=f"split_{line.name}"
             self.separate_rgb.color = self.get_colors()[(line_index(line))%9]
             self.separate_rgb.use_custom_color = True
@@ -355,7 +355,7 @@ class NodeHandler(MaterialHolder):
                 else:
                     self.plug_node(self.separate_rgb.outputs[i],sock.input_sockets)
             if self.has_ao and 'Ambient Occlusion' in sock.input_sockets:
-                if self.separate_rgb.name.replace("STM_splitter_","") in self.ao_mix.name.replace("STM_ambient_occlusion_",""):
+                if self.separate_rgb.name.replace("STM_split_","") in self.ao_mix.name.replace("STM_ambient_occlusion_",""):
                     self.links.new(self.separate_rgb.outputs[i], self.ao_mix.inputs[0])
             if 'Displacement' in sock.input_sockets and self.disp_map_node:
                 self.links.new(self.separate_rgb.outputs[i], self.disp_map_node.inputs[0])
@@ -488,7 +488,7 @@ class NodeHandler(MaterialHolder):
             return line.file_name
         mat_name = self.mat_name_cleaner()
         if props().dir_content :
-            dir_content = [v for (k,v) in json.loads(props().dir_content).items()]
+            dir_content = json.loads(props().dir_content)
             lower_dir_content = [v.lower() for v in dir_content]
             map_name = line.name
             for map_file in lower_dir_content:
@@ -503,7 +503,6 @@ class NodeHandler(MaterialHolder):
         return mat_name
 
     def assign_images(self):
-        mat_name = self.mat_name_cleaner()
         for line in p_lines():
             line.file_name = self.find_file(line)
             if not line.file_name:
@@ -520,7 +519,7 @@ class NodeHandler(MaterialHolder):
             nodes = [node for node in self.nodes if node.label and node.label in line.name]
             if len(nodes) and nodes[0]:
                 image = bpy.data.images.load(filepath=line.file_name) if not image_name in bpy.data.images else bpy.data.images[image_name]
-                if not "Color" in propper.check_special_keywords(line.name.replace(" ","").lower()) :
+                if not "Color" in propper.check_special_keywords(line.name.replace(" ","").lower()):
                     image.colorspace_settings.name = 'Non-Color'
                 nodes[0].image = bpy.data.images[image.name]
                 self.report_content.append(f"Texture file {image_name} assigned to {line.name} node in {self.mat.name} ")
@@ -534,7 +533,6 @@ class NodeHandler(MaterialHolder):
 
     def move_nodes(self):
         imgs = [nod for nod in self.nodes if nod.type == 'TEX_IMAGE']
-        node_set = set([nod.bl_idname for nod in self.nodes])
         aos = [nod for nod in self.nodes if nod.bl_idname in ["ShaderNodeMixShader","ShaderNodeDisplacement","ShaderNodeVectorDisplacement"]]
         bumps = [nod for nod in self.nodes if nod.bl_idname in "ShaderNodeBump"]
         ramps = [nod for nod in self.nodes if nod.bl_idname in "ShaderNodeValToRGB"]
@@ -545,7 +543,6 @@ class NodeHandler(MaterialHolder):
         delta = -260 + spacer
         cols = 0.0
         ao = 0
-        node_set = set([nod.bl_idname for nod in self.nodes])
         if len(aos):
             ao = 1
         if len(ramps) or len(curves):
@@ -581,7 +578,7 @@ class NodeHandler(MaterialHolder):
             nod.location.y += (len(aos)*150)/2
             nod.location.y += i*-250
         for i,nod in enumerate(splitters):
-            nod.location.y = self.nodes[f'STM_img_{nod.name.replace("STM_splitter_","")}'].location.y
+            nod.location.y = self.nodes[f'STM_img_{nod.name.replace("STM_split_","")}'].location.y
         for i,nod in enumerate(curves):
             nod.location.y = self.nodes[f'STM_img_{nod.name.replace("STM_curve_","").replace("STM_directx_","")}'].location.y
         for i,nod in enumerate(ramps):
