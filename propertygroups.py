@@ -116,7 +116,7 @@ def target_list_up(self,context):
 
 def set_operator_description(target):
     bpy.types.NODE_OT_stm_import_textures.bl_description = "Setup nodes and load textures\
-                                                             maps on \n" + target
+                                                            \n maps on " + target
     bpy.types.NODE_OT_stm_make_nodes.bl_description = "Setup Nodes on " + target
     bpy.types.NODE_OT_stm_assign_nodes.bl_description = "Load textures maps on " + target
     liste = [
@@ -278,6 +278,9 @@ def replace_shader_up(self, context):
     propper.wish = set_wish()
     context.view_layer.update()
 
+def separators_cb(self,context):
+    return [("_","_","(underscore)"),("-","-","(minus sign)"),(",",",","(comma)"),(";",";","(semicolon)"),(".",".","(dot)"),("+","+","(plus sign)"),("&","&","(ampersand)")]
+
 class ShaderLinks(PropertyGroup):
 
     ID: IntProperty(
@@ -378,7 +381,7 @@ class StmProps(PropertyGroup):
         description=" Clear existing nodes \
                      \n Removes all nodes from the material shader \
                      \n before setting up the nodes trees",
-        default=False,
+        default=True,
         update=clear_nodes_up
     )
     target: EnumProperty(
@@ -463,6 +466,16 @@ class StmProps(PropertyGroup):
 
         items=shaders_list_cb,
         update=shaders_list_up
+    )
+    separators_list: EnumProperty(
+        name="separators_list:",
+        description=" Selector for the separator used to detect multi-sockets.\
+                        \n If your texture map name contains multiple keywords like\
+                        \n material_bump,metallic,ambient.exr , material_bump-metallic-ambient.exr\
+                        \n or material_bump;metallic;ambient.exr etc. \
+                        \n Adjust this to fit the separator character between your maps keywords.",
+
+        items=separators_cb,
     )
     lines_from_files: BoolProperty(
         description=" Attempt to auto rename the map lines names according to\

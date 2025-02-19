@@ -37,6 +37,8 @@ class NodeHandler(MaterialHolder):
         selected = self.get_target_mats(bpy.context)
         self.report_content.clear()
         for mat in selected:
+            if mat.is_grease_pencil:
+                continue
             self.mat = mat
             propper.mat = mat
             if not propper.get_shader_node() and not props().replace_shader:
@@ -48,7 +50,7 @@ class NodeHandler(MaterialHolder):
 
     def get_target_mats(self,context):
         mat_list = []
-        validtypes = ['SURFACE', 'CURVE', 'META', 'MESH', 'GPENCIL']
+        validtypes = ['SURFACE', 'CURVE', 'META', 'MESH']
         match props().target:
             case "selected_objects":
                 if len(context.view_layer.objects):
@@ -159,11 +161,11 @@ class NodeHandler(MaterialHolder):
 
     def create_coords_nodes(self):
         self.coord_node = self.nodes.new('ShaderNodeTexCoord')
-        self.coord_node.label = f"{self.mat_name_cleaner()} Coordinates"
+        self.coord_node.label = f"{propper.mat_name_cleaner()} Coordinates"
         self.coord_node.name = f"STM_{self.coord_node.name}"
 
     def make_tex_mapping_nodes(self):
-        mat_name = self.mat_name_cleaner()
+        mat_name = propper.mat_name_cleaner()
         self.mapping_node = self.nodes.new('ShaderNodeMapping')
         self.mapping_node.label = f"{mat_name} Mapping"
         self.mapping_node.name = f"STM_{self.mapping_node.name}"
@@ -192,7 +194,7 @@ class NodeHandler(MaterialHolder):
         self.vect_disp = self.in_sockets(line,"Disp Vect")
         self.displaced = self.in_sockets(line,"Displacement")
         self.has_normal = self.in_sockets(line,"Normal")
-        self.has_height = "bump" in [propper.check_special_keywords(w) for w in line.name.lower().strip().split(",") ] or (self.has_normal and line.split_rgb)
+        self.has_height = "bump" in [propper.check_special_keywords(w) for w in line.name.lower().strip().split(props().separators_list) ] or (self.has_normal and line.split_rgb)
         self.has_ao = self.in_sockets(line,"Ambient Occlusion")
         if props().tweak_levels:
             skip_ramps = len([x for x in ["subsurface radius", "normal","disp. vector", "tangent"] if line.name.lower() in x]) > 0
@@ -260,7 +262,7 @@ class NodeHandler(MaterialHolder):
             self.links.new(self.new_image_node.outputs[0], self.disp_map_node.inputs['Height'])
 
     def check_vector_displacement(self,line):
-        if not (('Disp Vector' in line.input_sockets) or 'Disp Vector' in [propper.check_special_keywords(w) for w in line.name.lower().strip().split(",") ]):
+        if not (('Disp Vector' in line.input_sockets) or 'Disp Vector' in [propper.check_special_keywords(w) for w in line.name.lower().strip().split(props().separators_list) ]):
             return
         if self.bump_map_node :
             self.nodes.remove(self.bump_map_node)
@@ -284,7 +286,7 @@ class NodeHandler(MaterialHolder):
             self.vect_disp = False
 
     def in_line(self,line,term):
-        if term.replace(" ","") in [propper.check_special_keywords(w).replace(" ","") for w in line.name.lower().strip().split(",") ]:
+        if term.replace(" ","") in [propper.check_special_keywords(w).replace(" ","") for w in line.name.lower().strip().split(props().separators_list) ]:
             return True
         return False
 
@@ -318,12 +320,12 @@ class NodeHandler(MaterialHolder):
             self.normal_map_node.use_custom_color = True
 
     def check_opengl_mode(self,line):
-        if props().mode_opengl:
+        if props().mode_opengl or line.split_rgb:
             return
         if self.has_normal or self.disp_vec_node :
             self.directx_converter = self.make_rgb_green_inverted()
             self.directx_converter.name = f"STM_directx_{line.name}"
-            self.directx_converter.label = line.name
+            self.directx_converter.label = "G-Inverter"
             self.directx_converter.color = self.get_colors()[(line_index(line))%9]
             self.directx_converter.use_custom_color = True
         if self.directx_converter and self.extra_node:
@@ -360,7 +362,7 @@ class NodeHandler(MaterialHolder):
             if 'Displacement' in sock.input_sockets and self.disp_map_node:
                 self.links.new(self.separate_rgb.outputs[i], self.disp_map_node.inputs[0])
 
-        if self.add_curve:
+        if self.add_curve and self.extra_node:
             self.links.new(self.new_image_node.outputs[0], self.extra_node.inputs[1])
             self.links.new(self.extra_node.outputs[0], self.separate_rgb.inputs[0])
 
@@ -475,7 +477,7 @@ class NodeHandler(MaterialHolder):
             self.detect_a_map(line)
 
     def detect_a_map(self,line):
-        mat_name = self.mat_name_cleaner()
+        mat_name = propper.mat_name_cleaner()
         if mat_name:
             line.file_name = self.find_file(line)
             propper.default_sockets(line)
@@ -486,7 +488,7 @@ class NodeHandler(MaterialHolder):
     def find_file(self,line):
         if line.manual:
             return line.file_name
-        mat_name = self.mat_name_cleaner()
+        mat_name = propper.mat_name_cleaner()
         if props().dir_content :
             dir_content = json.loads(props().dir_content)
             lower_dir_content = [v.lower() for v in dir_content]
@@ -496,11 +498,7 @@ class NodeHandler(MaterialHolder):
                     return str(Path(props().usr_dir).joinpath(Path(dir_content[lower_dir_content.index(map_file)])))
         return ""
 
-    def mat_name_cleaner(self):
-        mat_name = self.mat.name
-        if props().dup_mat_compatible:
-            mat_name = mat_name.split(".0")[0]
-        return mat_name
+
 
     def assign_images(self):
         for line in p_lines():

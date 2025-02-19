@@ -1,4 +1,4 @@
-Substance Texture Importer
+Substance Textures Importer
 ------------------------------------
 
 
@@ -10,13 +10,24 @@ Substance Texture Importer
 Description:
 ------------
 
-Blender addon designed to import images textures made with Substance Painter or other similar surfacing tools into Blender 3D easily.
-The script looks at all the images in the choosen directory and attempts to guess the corresponding shader input to plug them into.
-Basing its detection on the objects materials names, the algorithm will look for a matching image file depending on the selected map types enabled in the UI panel (available in the Material Properties section ).
-The texture maps names are editable and the target shader input socket can be set from a dropdown list for better control.
+Blender extension designed to import images textures made with Substance Painter or other similar surfacing tools into Blender 3D easily.
+The script looks at all the images in the chosen directory and attempts to guess the corresponding shader input to plug them into.
+According to the target materials names, the algorithm will look for a matching image name pattern to fill the selected map names enabled in the UI panel.
+The extension panel is available via the File menu > Import > Substance textures and in the Shader Nodes Editor SideBar > STM Tab.
+The texture maps names are editable and can include up to 3 multi-channel maps. The target shader input socket can be set from a drop-down list for better control.
+
+.. figure:: http://kos-design.com/images/wikipics/addon_panel.png
+   :align: left
+
 The texture files must have been exported using a pattern containing the material name and a map type (BaseColor, Metallic, Roughness, Normal etc.).
-Manual assignement is also possible for a given material regardless of the texture file name pattern.
-Various options are available for fine tuning such as adding RGB curves and color ramps, using custom shader nodes or even ignoring the .00x prefix in duplicated material names.
+You can use the Split RGB option to connect the Red, Green and Blue channels individually if your textures include separate maps mixed in.  
+When 'Detect Sockets' is enabled the script will parse the line name and fill in the input socket if a match is found and Line names like 'alpha_ior_metal' will be recognized as split-rgb.
+
+.. figure:: http://kos-design.com/images/wikipics/panel_multi_sockets.gif
+   :align: left 
+
+Manual assignment is also possible for a given material regardless of the texture file name pattern.
+Various options are available for fine tuning such as adding RGB curves and color ramps, using custom shader nodes, inverting the Green channel of the normal map or even ignoring the .00x prefix in duplicated material names.
 
 
 Installation:
@@ -26,12 +37,11 @@ Installation:
 
 https://youtu.be/lumrnhikSOg
 
-`Download the latest git release of Substance Texture Importer from here <https://github.com/Kos-Design/substance_textures_importer/releases/download/0.5.0/Substance_Texture_Importer.zip>`__
+`Download the latest git release of Substance Textures Importer from here <https://github.com/Kos-Design/substance_textures_importer/releases/download/0.6.0/Substance_Textures_Importer.zip>`__
 and install it in Blender via Edit > Preferences > Add-ons > Install an Addon.
 
-Note : if you download the files manually copy the folder inside your Blender Add-Ons directory.
-It will then appear in the Add-Ons list (you can find it by typing "Material: Substance Texture Importer" in the search bar of the Blender Preferences window > Addon tab).
-Enable like the other add-ons by ticking the checkbox in front of “Material: Substance Texture Importer”.
+Once installed, enable like the other add-ons by ticking the checkbox in front of “Substance Textures Importer”.
+You can adjust the defaults in the extension preferences panel.
 The user interface panel is available from the Material section in the Properties window.
 
 
@@ -42,7 +52,7 @@ How-to:
 
 https://youtu.be/45rky8J_0us
 
-The panel labeled "Substance Texture Importer" is displayed under the Shader Settings in the Material Tab.
+The panel labeled "Substance Textures Importer" is displayed under the Shader Settings in the Material Tab.
 
 First choose the directory containing the textures files to be imported using the folder selection field under the "Maps Folder" section of the addon panel.
 
@@ -50,7 +60,7 @@ First choose the directory containing the textures files to be imported using th
 
 After setting the folder the script, modify the texture maps names ('Color','Roughness'...) to fit your naming pattern
 
-.. figure:: http://kos-design.com/images/wikipics/addon_panel.png
+.. figure:: http://kos-design.com/images/wikipics/panel_lines.gif
    :align: left
 
 You can enable/disable the textures maps type you wish to import by ticking the 'Active' checkmark under the maps list in the addon panel (you can also add/delete more lines and edit the texture map name if needed)
@@ -75,6 +85,9 @@ By default the script will import the images for all selected objects at once, t
 
 Options:
 --------
+
+.. figure:: http://kos-design.com/images/wikipics/preferences.jpg
+   :align: left
 
 ---------------
 Replace Shader:
@@ -125,9 +138,6 @@ When enabled, a new line labelled 'Overwrite file name' will appear under the ma
 You can then activate it for each line and the texture map name will change to an individual file selection field that you can use to set the path of a texture file to import.
 Note: When "Manual" and "Overwrite file name" are enabled in one of the Panel lines,
 the addon will skip the name pattern detection and will use the path you select instead.
-(TODO: OUTDATED)
-Also the target will switch to "Only active Object" and enable the option "Only Active Material" when "Overwrite file name" is used.
-(otherwise the Importer would load the same file for each material & objects in the selected shader input node).
 
 .. figure:: http://kos-design.com/images/wikipics/manual.png
    :align: left

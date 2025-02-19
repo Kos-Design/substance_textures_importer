@@ -90,7 +90,7 @@ class MaterialHolder():
 
     @property
     def nodes(self):
-        if not self._nodes :
+        if not self._nodes and self.mat and self.mat.node_tree:
             self._nodes = self.mat.node_tree.nodes
         return self._nodes
 
@@ -388,7 +388,7 @@ class PropertiesHandler(MaterialHolder):
         return None
 
     def check_special_keywords(self,term):
-        if "," in term:
+        if props().separators_list in term:
             return ""
         #no spaces
         matcher = { "Color":["color","col","colore","colour","couleur", "basecolor",
@@ -407,19 +407,21 @@ class PropertiesHandler(MaterialHolder):
                 return k
         return ""
 
+    def mat_name_cleaner(self):
+        return self.mat.name.split(".0")[0] if props().dup_mat_compatible else self.mat.name
+
     def synch_names(self):
         liners = []
         exts = set(bpy.path.extensions_image)
         dir_content = [x.name for x in Path(props().usr_dir).glob('*.*') if x.suffix.lower() in exts]
         if len(dir_content) :
             props().dir_content = json.dumps(dir_content)
-            if self.mat.name in props().dir_content:
-                mat_related = [Path(_img).stem.replace(f"{self.mat.name}","").lower() for _img in dir_content if self.mat.name in _img]
+            if self.mat_name_cleaner() in props().dir_content:
+                mat_related = [Path(_img).stem.lower() for _img in dir_content if self.mat_name_cleaner() in _img]
                 prefix = commonprefix(mat_related)
                 suffix = commonprefix([s[::-1] for s in mat_related])
                 liners = sorted(list({i.replace(prefix,"").replace(suffix[::-1],"") for i in mat_related}))
         if len(liners) > 1 :
-            print(liners)
             self.adjust_lines_count(len(liners)-len(lines()))
             for i,l in enumerate(lines()) :
                 l.name = liners[i]
@@ -430,13 +432,13 @@ class PropertiesHandler(MaterialHolder):
         if not target_list:
             target_list = self.sicks()
         for sock in target_list:
-            match_1 = term.replace(" ", "").lower() in sock.replace(" ", "").lower()
-            if match_1:
+            match = term.replace(" ", "").lower() in sock.replace(" ", "").lower()
+            if match:
                 return sock
         return None
 
     def detect_multi_socket(self,line):
-        splitted = line.name.split(',')
+        splitted = line.name.split(props().separators_list)
         if len(splitted) > 1 or line.split_rgb:
             line['split_rgb'] = True
             if len(splitted) != 3 :

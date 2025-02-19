@@ -256,8 +256,6 @@ class NODE_OT_stm_fill_names(SubOperatorPoll,Operator):
     bl_label = "Synch line names with files"
     bl_description = 'Rename panel lines from keywords detected in the texture files'
 
-    preset_file: StringProperty()
-
     def execute(self, context):
         propper.synch_names()
         return {'FINISHED'}

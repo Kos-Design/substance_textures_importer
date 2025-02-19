@@ -167,4 +167,8 @@ class StmAddonPreferences(AddonPreferences):
         layout.label(text="Default maps:")
         draw_panel(self,context)
         NODE_PT_stm_options.draw(self, context)
+        row = layout.row()
+        row.label(text="Separator used for multi-sockets: ")
+        row.split(factor=10)
+        row.prop(self.props,'separators_list',text="")
         layout.prop(self,'display_in_editor',text="Display Panel in Shader Nodes Editor")
