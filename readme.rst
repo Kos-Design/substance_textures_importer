@@ -2,7 +2,7 @@ Substance Textures Importer
 ------------------------------------
 
 
-.. figure:: http://kos-design.com/images/wikipics/addon_pic.png
+.. figure:: http://kos-design.com/images/wikipics/addon_pic.jpg
    :scale: 100 %
    :align: center
 
@@ -16,15 +16,15 @@ According to the target materials names, the algorithm will look for a matching 
 The extension panel is available via the File menu > Import > Substance textures and in the Shader Nodes Editor SideBar > STM Tab.
 The texture maps names are editable and can include up to 3 multi-channel maps. The target shader input socket can be set from a drop-down list for better control.
 
-.. figure:: http://kos-design.com/images/wikipics/addon_panel.png
+.. figure:: http://kos-design.com/images/wikipics/import_panel.jpg
    :align: left
 
 The texture files must have been exported using a pattern containing the material name and a map type (BaseColor, Metallic, Roughness, Normal etc.).
-You can use the Split RGB option to connect the Red, Green and Blue channels individually if your textures include separate maps mixed in.  
+You can use the Split RGB option to connect the Red, Green and Blue channels individually if your textures include separate maps mixed in.
 When 'Detect Sockets' is enabled the script will parse the line name and fill in the input socket if a match is found and Line names like 'alpha_ior_metal' will be recognized as split-rgb.
 
 .. figure:: http://kos-design.com/images/wikipics/panel_multi_sockets.gif
-   :align: left 
+   :align: left
 
 Manual assignment is also possible for a given material regardless of the texture file name pattern.
 Various options are available for fine tuning such as adding RGB curves and color ramps, using custom shader nodes, inverting the Green channel of the normal map or even ignoring the .00x prefix in duplicated material names.
