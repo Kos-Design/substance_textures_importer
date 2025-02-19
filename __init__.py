@@ -65,7 +65,6 @@ classes = (
     NODE_OT_stm_move_line
     )
 
-
 def register():
     from bpy.utils import register_class
     for cls in classes:
