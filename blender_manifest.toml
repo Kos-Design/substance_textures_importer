@@ -1,6 +1,6 @@
 schema_version = "1.0.0"
 id = "substance_textures_importer"
-version = "6.0.0"
+version = "6.1.0"
 name = "Substance Textures Importer"
 tagline = "Import & autoassign images from 3D painting tools like Substance"
 maintainer = "Cosmin Planchon <info@kosmin.fr>"
@@ -9,4 +9,6 @@ website = "https://github.com/Kos-Design/substance_textures_importer"
 tags = ["Material","Import-Export","Node"]
 blender_version_min = "4.2.0"
 license = ["SPDX:GPL-3.0-or-later",]
+[permissions]
+files = "Import images from disk & read/write customs presets"
 
