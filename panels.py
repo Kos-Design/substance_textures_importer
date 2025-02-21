@@ -30,9 +30,11 @@ def draw_panel(self,context):
         sub_layout = layout.column()
         sub_layout.enabled = item.line_on
         sub_layout.prop(item, "auto_mode")
-        sub_layout.prop(item, "split_rgb")
+        sub_sub_layout = layout.column()
+        sub_sub_layout.enabled = not item.auto_mode
+        sub_sub_layout.prop(item, "split_rgb")
         if item.split_rgb:
-            if item.channels.socket and item.channels.sockets_index < len(item.channels.socket):
+            if item.channels.socket :
                 sl = sub_layout.column()
                 sl.enabled = not item.auto_mode and item.line_on
                 for i,sk in enumerate(item.channels.socket):

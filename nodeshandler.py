@@ -1,5 +1,4 @@
 import bpy
-import json
 from pathlib import Path
 from . propertieshandler import props, node_links, PropertiesHandler,p_lines,MaterialHolder,line_index,set_wish
 
@@ -40,6 +39,7 @@ class NodeHandler(MaterialHolder):
             if mat.is_grease_pencil:
                 continue
             self.mat = mat
+            self.mat.use_nodes = True
             propper.mat = mat
             if not propper.get_shader_node() and not props().replace_shader:
                 self.report_content.append(f"Connect a shader node to {self.mat.name} output node or enable Replace Shader in the STM panel Options")
@@ -71,9 +71,7 @@ class NodeHandler(MaterialHolder):
 
     def process_materials(self,only_setup_nodes=False):
         self.clean_props()
-        method = self.setup_nodes if only_setup_nodes else self.assign_images
-        self.mat.use_nodes = True
-        method()
+        self.setup_nodes() if only_setup_nodes else self.assign_images()
 
     def clean_props(self):
         self.coord_node = None
@@ -489,8 +487,8 @@ class NodeHandler(MaterialHolder):
         if line.manual:
             return line.file_name
         mat_name = propper.mat_name_cleaner()
-        if props().dir_content :
-            dir_content = json.loads(props().dir_content)
+        if len(props().img_files) > 0 :
+            dir_content = [i.name for i in props().img_files]
             lower_dir_content = [v.lower() for v in dir_content]
             map_name = line.name
             for map_file in lower_dir_content:

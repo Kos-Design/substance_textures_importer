@@ -17,11 +17,11 @@ def ShowMessageBox(message="", title="Message", icon='INFO'):
         self.layout.label(text=message)
     bpy.context.window_manager.popup_menu(draw, title=title, icon=icon)
 
-def get_directory(self,context):
-    return self.directory
+def get_directory(self):
+    #props().usr_dir = self.get("directory",'')
+    return self.get("directory",'')
 
 def set_directory(self,value):
-    #only applied when using the import button :(
     self["directory"] = value
     props().usr_dir = self["directory"]
 
@@ -148,7 +148,7 @@ class NODE_OT_stm_add_preset(SubOperatorPoll,Operator):
         p_file = Path(NODE_OT_stm_presets_dialog.p_dir).joinpath(preset_name)
         filer = f"{p_file}{'.py' if 'py' not in p_file.suffix else ''}"
         with open(filer, "w", encoding="utf-8") as w:
-            w.write(propper.fill_settings())
+            w.write(str(propper.fill_settings()))
             self.report({'INFO'}, f"Added preset: {preset_name}")
             return {'FINISHED'}
         return {'CANCELLED'}
@@ -160,7 +160,7 @@ class NODE_OT_stm_presets_dialog(SubOperatorPoll,Operator):
     bl_description = 'Open preset panel'
 
     p_dir = Path(bpy.utils.extension_path_user(f'{__package__}',path="stm_presets", create=True))
-
+    
     def execute(self, context):
         return {'FINISHED'}
 
@@ -221,6 +221,7 @@ class NODE_OT_stm_execute_preset(SubOperatorPoll,Operator):
             return {'CANCELLED'}
         filer = f"{Path(NODE_OT_stm_presets_dialog.p_dir).joinpath(self.preset_file)}"
         if filer in [p[0] for p in propper.get_preset_list()]:
+            print("reading preset")
             props().preset_enum = filer
             return {'FINISHED'}
         return {'CANCELLED'}
@@ -240,7 +241,7 @@ class NODE_OT_add_preset_popup(SubOperatorPoll,Operator):
         p_file = Path(NODE_OT_stm_presets_dialog.p_dir).joinpath(self.preset_name)
         filer = f"{p_file}{'.py' if 'py' not in p_file.suffix else ''}"
         with open(filer, "w", encoding="utf-8") as w:
-            w.write(propper.fill_settings())
+            w.write(str(propper.fill_settings()))
         props().preset_enum = filer
         return {'FINISHED'}
 
@@ -251,6 +252,7 @@ class NODE_OT_add_preset_popup(SubOperatorPoll,Operator):
         layout = self.layout
         layout.prop(self, "preset_name")
 
+
 class NODE_OT_stm_fill_names(SubOperatorPoll,Operator):
     bl_idname = "node.stm_fill_names"
     bl_label = "Synch line names with files"
@@ -259,7 +261,14 @@ class NODE_OT_stm_fill_names(SubOperatorPoll,Operator):
     def execute(self, context):
         propper.synch_names()
         return {'FINISHED'}
-        #return {'CANCELLED'}
+
+"""
+def set_settings(self,val):
+    props().stm_all = val
+
+def get_settings(self):
+    return f"{propper.fill_settings()}"
+"""
 
 class IMPORT_OT_stm_window(Operator):
     bl_idname = "import.stm_window"
@@ -267,7 +276,8 @@ class IMPORT_OT_stm_window(Operator):
     bl_description = "Open a substance textures importer panel"
     bl_options = {"REGISTER", "UNDO"}
 
-    directory: StringProperty(subtype="DIR_PATH",set=set_directory)
+    #settings : StringProperty(get=get_settings,set=set_settings)
+    directory: StringProperty(subtype="DIR_PATH",get=get_directory,set=set_directory)
     op: BoolProperty(name="Options", default=True)
     p_dir = NODE_OT_stm_presets_dialog.p_dir
 

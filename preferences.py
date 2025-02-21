@@ -24,18 +24,19 @@ def set_name_up(self, value):
                 enum_sockets_up(self,bpy.context)
         propper.wish = set_wish()
     except AttributeError:
-        print(f"error during sockets update {self.wish}" )
+        print(f"error during sockets update {propper.wish}" )
 
 def init_prefs():
     prefs = bpy.context.preferences.addons[__package__].preferences
     if len(prefs.shader_links) == 0:
         prefs.shader_links.add()
     if len(prefs.maps.textures) == 0:
-        maps = ["Color","Roughness","Metallic","Normal"]
+        maps = ["Color","Metallic","Roughness","Normal"]
         for i in range(4):
             item = prefs.maps.textures.add()
             item.name = f"{maps[i]}"
-            item.input_sockets = f"{'' if i else 'Base '}{maps[i]}"
+            item['input_sockets'] = i+2 +(int(not i%3)*2)*int(bool(i))
+            #item.input_sockets = f"{'' if i else 'Base '}{maps[i]}"
             propper.make_clean_channels(item)
 
 class StmChannelSocket(PropertyGroup):
@@ -55,12 +56,6 @@ class StmChannelSocket(PropertyGroup):
 
 class StmChannelSockets(PropertyGroup):
     socket: CollectionProperty(type=StmChannelSocket)
-    sockets_index: IntProperty(default=0)
-    line_name: StringProperty(
-        name="Color",
-        description="name of the line owning this instance",
-        default="Select a name"
-    )
 
 
 class StmPanelLines(PropertyGroup):

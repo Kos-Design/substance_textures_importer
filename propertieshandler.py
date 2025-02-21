@@ -1,6 +1,5 @@
 import bpy
 from pathlib import Path
-import json
 from os.path import commonprefix
 
 def props():
@@ -139,9 +138,8 @@ class PropertiesHandler(MaterialHolder):
             ('ShaderNodeBsdfPrincipled', 'Principled BSDF', ''),
         ]
         if props().include_ngroups:
-            for i in range(len(node_links())):
-                item = node_links()[i].nodetype
-                shaders_list.append((item, item, ''), )
+            for i in node_links():
+                shaders_list.append((i.nodetype, i.nodetype, ''), )
         shaders_list.reverse()
         return shaders_list
 
@@ -153,7 +151,6 @@ class PropertiesHandler(MaterialHolder):
         return None
 
     def make_clean_channels(self,line):
-        line.channels.line_name = line.name
         line.channels.socket.clear()
         for i in range(3):
             item = line.channels.socket.add()
@@ -163,7 +160,7 @@ class PropertiesHandler(MaterialHolder):
 
     def initialize_defaults(self):
         lines().clear()
-        maps = ["Color","Roughness","Metallic","Normal"]
+        maps = ["Color","Metallic","Roughness","Normal"]
         for i in range(4):
             item = lines().add()
             item.name = f"{maps[i]}"
@@ -195,9 +192,8 @@ class PropertiesHandler(MaterialHolder):
             ('ShaderNodeBsdfPrincipled', 'Principled BSDF', ''),
         ]
         if props().include_ngroups:
-            for i in range(len(node_links())):
-                item = node_links()[i].nodetype
-                shaders_list.append((item, item, ''), )
+            for i in node_links():
+                shaders_list.append((i.nodetype, i.nodetype, ''), )
         shaders_list.reverse()
         return shaders_list
 
@@ -209,52 +205,153 @@ class PropertiesHandler(MaterialHolder):
         for nd in ng:
             nw = mat_tmp.node_tree.nodes.new('ShaderNodeGroup')
             nw.node_tree = nd
-            if ok := len(nw.inputs) and len(nw.outputs):
+            if len(nw.inputs) + len(nw.outputs) > 0:
                 new_link = node_links().add()
                 new_link.name = nd.name
                 new_link.label = nd.name
                 new_link.nodetype = nd.name
-                for socket in [i for i in nw.outputs if ok]:
-                    validoutput = socket.type == "SHADER"
-                    if validoutput:
-                        new_link.outputsockets = socket.name
-                        break
-                socks = [str(s.name) for s in [n for n in nw.inputs if ok] if s.type != "SHADER"]
-                if len(socks) == 0:
-                    new_link.input_sockets = "{'0':'0'}"
-                else:
-                    new_link.input_sockets = json.dumps((dict(zip(range(len(socks)), socks))))
+                for sk in [n.name for n in nw.inputs if n.type != "SHADER"]:
+                    si = new_link.in_sockets.add()
+                    si.name = sk
         mat_tmp.node_tree.nodes.clear()
         bpy.data.materials.remove(mat_tmp)
 
+    def parse_dict_string(self, s):
+        s = s.strip()
+        if s.startswith("{") and s.endswith("}"):
+            s = s[1:-1].strip()
+        parsed_dict = {}
+        key = None
+        value = None
+        in_list = False
+        in_dict = False
+        buffer = ""
+        list_buffer = []
+        i = 0
+        while i < len(s):
+            char = s[i]
+            if char == ":" and not in_list and not in_dict:
+                key = buffer.strip().strip("'").strip('"')
+                buffer = ""
+            elif char == "," and not in_list and not in_dict:
+                if key is not None:
+                    parsed_dict[key] = self.convert_value(buffer.strip())
+                    key = None
+                buffer = ""
+            elif char == "[":
+                in_list = True
+                list_buffer = []
+                buffer = ""
+            elif char == "]":
+                in_list = False
+                list_buffer.append(self.convert_value(buffer.strip()))
+                parsed_dict[key] = list_buffer
+                key = None
+                buffer = ""
+            elif char == "{":
+                in_dict = True
+                nested_dict_start = i
+                brace_count = 1
+                while brace_count > 0 and i + 1 < len(s):
+                    i += 1
+                    if s[i] == "{":
+                        brace_count += 1
+                    elif s[i] == "}":
+                        brace_count -= 1
+                nested_dict = s[nested_dict_start:i + 1]
+                parsed_dict[key] = self.parse_dict_string(nested_dict)
+                key = None
+                buffer = ""
+            elif char == "'" or char == '"':
+                pass
+            else:
+                if in_list and char == ",":
+                    list_buffer.append(self.convert_value(buffer.strip()))
+                    buffer = ""
+                else:
+                    buffer += char
+            i += 1
+        if key is not None and buffer.strip():
+            parsed_dict[key] = self.convert_value(buffer.strip())
+        return parsed_dict
+
+    def convert_value(self, value):
+        value = value.strip()
+        if value.lower() == "true":
+            return True
+        elif value.lower() == "false":
+            return False
+        elif value.isdigit():
+            return int(value)
+        elif value.replace(".", "", 1).isdigit() and value.count(".") < 2:
+            return float(value)
+        return value
+
+    def format_dict(self,data,level=0):
+        if not isinstance(data, dict):
+            return str(data)
+        result = "{\n"
+        for key, value in data.items():
+            result += " " * (level + 1) * 4
+            result += f'"{key}": '
+            if isinstance(value, dict):
+                result += self.format_dict(value, level + 1)
+            else:
+                result += str(value)
+            result += ",\n"
+        result = result.rstrip(",\n") + "\n"
+        result += " " * level * 4 + "}"
+        return result
+
     def load_props(self):
-        args = json.loads(props().stm_all)
+        args = self.parse_dict_string(props().stm_all)
         line_names = args['line_names']
         mismatch = len(line_names) - len(lines())
         if mismatch:
             self.adjust_lines_count(mismatch)
         for attr in args['attributes']:
             if isinstance(getattr(props(),attr),bool):
-                setattr(props(),attr,'True' in args[attr])
+                setattr(props(),attr,args[attr])
             else:
                 setattr(props(),attr,args[attr])
         self.refresh_inputs()
         for i,line in enumerate(lines()):
             line.name = line_names[i]
             try :
-                line['input_sockets'] = args[line.name]['input_sockets']
-            except (TypeError,NameError,KeyError,ValueError,AttributeError,OverflowError):
-                pass
-            line['line_on'] = 'True' in args[line.name]['line_on']
-            line['file_name'] = args[line.name]['file_name']
-            line['manual'] = 'True' in args[line.name]['manual']
-            line['auto_mode'] = 'True' in args[line.name]['auto_mode']
-            line['split_rgb'] = 'True' in args[line.name]['split_rgb']
-            for i in range(3):
+                line['line_on'],line['file_name'],line['manual'],line['split_rgb'],line['auto_mode'] = args[line.name]
+                line['input_sockets'] = int(args["input_sockets"][i])
+            except (TypeError,NameError,KeyError,ValueError,AttributeError,OverflowError) as e:
+                print(e)
+        for i,ch in enumerate(args['channels']):
+            for j,k in enumerate(ch.split('-')):
                 try:
-                    line.channels.socket[i]['input_sockets'] = args[line.name]['channels']['socket']["RGB"[i]]['input_sockets']
-                except (TypeError,NameError,KeyError,ValueError,AttributeError,OverflowError):
+                    lines()[i]['channels']['socket'][j]['input_sockets'] = int(k)
+                    lines()[i]['channels']['socket'][j]['line_name'] = lines()[i].name
+                except (TypeError,NameError,KeyError,ValueError,AttributeError,OverflowError) as e:
+                    print(e)
                     continue
+
+    def fill_settings(self):
+        args = {}
+        args["internals"] = ["type","rna_type","dir_content","poll_props","preset_enum","in_sockets","img_files","content","bl_rna","name","stm_all"]
+        args["attributes"] = [attr for attr in props().bl_rna.properties.keys() if attr not in args["internals"] and attr[:2] != "__"]
+        args["line_names"] = []
+        args["input_sockets"] = [line["input_sockets"] for line in lines()]
+        args["channels"] = [("-").join([str(line.channels.socket["RGB"[i]]["input_sockets"]) for i in range(3)]) for line in lines()]
+        for attr in args["attributes"]:
+            if isinstance(getattr(props(),attr),bool):
+                args[attr] = f"{getattr(props(),attr)}"
+            else:
+                args[attr] = getattr(props(),attr)
+        for line in lines():
+            args["line_names"].append(line.name)
+            args[line.name] = [f"{line.line_on}",line.file_name,f"{line.manual}", f"{line.split_rgb}",f"{line.auto_mode}"]
+        try:
+            return self.format_dict(args)
+
+        except (TypeError,NameError,KeyError,ValueError,AttributeError,OverflowError) as e:
+            print("An error occurred with the Preset File ",e)
+        return '{"0":""}'
 
     def adjust_lines_count(self,difference):
         method = self.del_panel_line if difference < 0 else self.add_panel_lines
@@ -295,10 +392,11 @@ class PropertiesHandler(MaterialHolder):
                 new_shader_link = shader_links().add()
                 new_shader_link.name = str(shader_enum[1])
                 new_shader_link.shadertype = node_type
-                new_shader_link.input_sockets = json.dumps((dict(zip(range(len(new_node.inputs)),
-                    [inputs for inputs in new_node.inputs.keys() if not inputs == 'Weight']))))
-                new_shader_link.outputsockets = json.dumps((dict(zip(range(len(new_node.outputs)),
-                    [outputs.name for outputs in new_node.outputs]))))
+                for sk in [i for i in new_node.inputs.keys() if not i == 'Weight']:
+                    si = new_shader_link.in_sockets.add()
+                    #print(sk)
+                    si.name = sk
+
         for shader_enum in self.get_shaders_list_cycles():
             node_type = str(shader_enum[0])
             if node_type is not None and node_type != '0' :
@@ -310,12 +408,21 @@ class PropertiesHandler(MaterialHolder):
                 new_shader_link = shader_links().add()
                 new_shader_link.name = str(shader_enum[1])
                 new_shader_link.shadertype = node_type
-                new_shader_link.input_sockets = json.dumps((dict(zip(range(len(new_node.inputs)),
-                     [inputs for inputs in new_node.inputs.keys() if not inputs == 'Weight' ]))))
-                new_shader_link.outputsockets = json.dumps((dict(zip(range(len(new_node.outputs)),
-                     [outputs.name for outputs in new_node.outputs]))))
+                for sk in [i for i in new_node.inputs.keys() if not i == 'Weight']:
+                    si = new_shader_link.in_sockets.add()
+                    si.name = sk
+
         mat_tmp.node_tree.nodes.clear()
         bpy.data.materials.remove(mat_tmp)
+
+    def get_hard_sockets(self):
+        return [ "Base Color", "Metallic","Roughness","IOR", "Alpha",
+                "Normal", "Diffuse Roughness", "Subsurface Weight", "Subsurface Radius",
+                "Subsurface Scale", "Subsurface IOR","Subsurface Anisotropy","Specular IOR Level",
+                "Specular Tint","Anisotropic", "Anisotropic Rotation", "Tangent",
+                "Transmission Weight", "Coat Weight","Coat Roughness","Coat IOR", "Coat Tint",
+                "Coat Normal","Sheen Weight", "Sheen Roughness","Sheen Tint", "Emission Color",
+                "Emission Strength", "Thin Film Thickness", "Thin Film IOR" ]
 
     def refresh_inputs(self):
         self.clean_input_sockets()
@@ -336,23 +443,29 @@ class PropertiesHandler(MaterialHolder):
             rawdata = self.get_shader_inputs()
         else:
             selectedshader = props().shaders_list
-            for i in range(len(shader_links())):
-                if shader_links()[i].shadertype in selectedshader :
-                    rawdata = [v for (k,v) in json.loads(shader_links()[i].input_sockets).items()]
-            for i in range(len(node_links())):
-                if node_links()[i].nodetype in selectedshader:
-                    rawdata = [v for (k,v) in json.loads(node_links()[i].input_sockets).items()]
+            shaders = [sh.in_sockets for sh in shader_links() if sh.shadertype in selectedshader]
+            if len(shaders) > 0:
+                rawdata = [sk.name for sk in shaders[0]]
+            customs = [sh.in_sockets for sh in node_links() if sh.nodetype in selectedshader]
+            if props().include_ngroups and len(customs) > 0:
+                rawdata = [sk.name for sk in customs[0]]
+            if not len(rawdata) > 0 :
+                rawdata = self.get_hard_sockets()
+
         if not rawdata:
             self.clean_input_sockets()
-            rawdata = [v for (k,v) in json.loads(props().sockets).items()]
+            rawdata = [sh.name for sh in props().in_sockets]
         else:
             rawdata.append('Ambient Occlusion')
-        props().sockets = json.dumps((dict(zip(range(len(rawdata)), rawdata))))
+        props().in_sockets.clear()
+        for sk in rawdata:
+            si = props().in_sockets.add()
+            si.name = sk
 
     def get_sockets_enum_items(self):
-        if len(json.loads(props().sockets)) == 0:
+        if len(props().in_sockets) == 0:
             self.set_enum_sockets_items()
-        return self.format_enum([v for (k,v) in json.loads(props().sockets).items()])
+        return self.format_enum([sh.name for sh in props().in_sockets])
 
     def get_linked_node(self, _socket):
         if _socket and _socket.is_linked:
@@ -412,11 +525,14 @@ class PropertiesHandler(MaterialHolder):
 
     def synch_names(self):
         liners = []
+        props().img_files.clear()
         exts = set(bpy.path.extensions_image)
         dir_content = [x.name for x in Path(props().usr_dir).glob('*.*') if x.suffix.lower() in exts]
         if len(dir_content) :
-            props().dir_content = json.dumps(dir_content)
-            if self.mat_name_cleaner() in props().dir_content:
+            for img in dir_content:
+                i = props().img_files.add()
+                i.name = img
+            if self.mat_name_cleaner() in [i.name for i in props().img_files]:
                 mat_related = [Path(_img).stem.lower() for _img in dir_content if self.mat_name_cleaner() in _img]
                 prefix = commonprefix(mat_related)
                 suffix = commonprefix([s[::-1] for s in mat_related])
@@ -439,30 +555,32 @@ class PropertiesHandler(MaterialHolder):
 
     def detect_multi_socket(self,line):
         splitted = line.name.split(props().separators_list)
-        if len(splitted) > 1 or line.split_rgb:
-            line['split_rgb'] = True
-            if len(splitted) != 3 :
-                for i in range(3-len(splitted)):
-                    splitted.append("no_socket")
-            for i,_sock in enumerate(splitted):
-                if i > 2:
-                    return False
-                sock = self.find_in_sockets(_sock)
+        if not len(splitted) > 1 :
+            line['split_rgb'] = False
+            return False
+        line['split_rgb'] = True
+        if len(splitted) != 3 :
+            for i in range(3-len(splitted)):
+                splitted.append("no_socket")
+        for i,_sock in enumerate(splitted):
+            if i > 2:
+                return False
+            sock = self.find_in_sockets(_sock)
+            if not sock:
+                sock = self.check_special_keywords(_sock)
                 if not sock:
-                    sock = self.check_special_keywords(_sock)
-                    if not sock:
-                        sock = self.sicks()[0]
-                    if sock in "bump" :
-                        sock = 'Normal'
-                if (sock in self.sicks() and line.auto_mode) or (not line.auto_mode and sock in 'no_socket'):
-                    line.channels.socket[i]['input_sockets'] = self.sicks().index(sock)
-            return True
-        return False
+                    sock = self.sicks()[0]
+                if sock in "bump" :
+                    sock = 'Normal'
+            if (sock in self.sicks() and line.auto_mode) or (not line.auto_mode and sock in 'no_socket'):
+                line.channels.socket[i]['input_sockets'] = self.sicks().index(sock)
+        return True
+
 
     def default_sockets(self,line):
-        if self.detect_multi_socket(line):
-            return
         if not line.auto_mode :
+            return
+        if self.detect_multi_socket(line):
             return
         sock = self.find_in_sockets(line.name)
         if not sock:
@@ -477,38 +595,6 @@ class PropertiesHandler(MaterialHolder):
     def guess_sockets(self):
         for line in p_lines():
             self.default_sockets(line)
-
-    def fill_settings(self):
-        args = {}
-        args['internals'] = ['type','rna_type','dir_content','poll_props','preset_enum','content','bl_rna','name','stm_all']
-        args['attributes'] = [attr for attr in props().bl_rna.properties.keys() if attr not in args['internals'] and attr[:2] != "__"]
-        args['line_names'] = []
-        for attr in args['attributes']:
-            if isinstance(getattr(props(),attr),bool):
-                args[attr] = f"{getattr(props(),attr)}"
-            else:
-                args[attr] = getattr(props(),attr)
-        for line in lines():
-            args['line_names'].append(line.name)
-            args[line.name] = {}
-            args[line.name]['input_sockets'] = line['input_sockets']
-            args[line.name]['line_on'] = f"{line.line_on}"
-            args[line.name]['file_name'] = line.file_name
-            args[line.name]['manual'] = f"{line.manual}"
-            args[line.name]['split_rgb'] = f"{line.split_rgb}"
-            args[line.name]['auto_mode'] = f"{line.auto_mode}"
-            args[line.name]['channels'] = {}
-            args[line.name]['channels']['socket'] = {}
-            for i in range(3):
-                sk = "RGB"[i]
-                args[line.name]['channels']['socket'][sk] = {}
-                args[line.name]['channels']['socket'][sk]['input_sockets'] = line.channels.socket[sk]['input_sockets']
-                args[line.name]['channels']['socket'][sk]['line_name'] = line.channels.socket[sk].line_name
-        try:
-            return json.dumps(args,indent=4)
-        except (TypeError,NameError,KeyError,ValueError,AttributeError,OverflowError) as e:
-            print("An error occurred with the Preset File ",e)
-        return json.dumps({'0':''})
 
     def clean_input_sockets(self):
         #required to avoid warning errors
@@ -527,7 +613,7 @@ class PropertiesHandler(MaterialHolder):
         if not props().preset_enum in '0':
             try:
                 with open(f"{props().preset_enum}", "r", encoding="utf-8") as w:
-                    props().stm_all = w.read()
+                    props().stm_all = w.read().replace("'",'"')
                     self.load_props()
                     return f"Applied preset: {Path(props().preset_enum).stem}"
             except (TypeError,NameError,KeyError,ValueError,AttributeError,OverflowError) as e:

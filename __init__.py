@@ -12,7 +12,7 @@ bl_info = {
 
 import bpy
 
-from . propertygroups import ( ShaderLinks, NodesLinks, StmProps,register_msgbus,unregister_msgbus)
+from . propertygroups import ( StringItem,ShaderLinks, NodesLinks, StmProps,register_msgbus,unregister_msgbus)
 
 from . operators import ( NODE_OT_stm_execute_preset,NODE_OT_stm_reset_substance_textures,
                           NODE_OT_stm_make_nodes, NODE_OT_stm_assign_nodes,menu_func,
@@ -31,6 +31,7 @@ from . preferences import (StmAddonPreferences, StmPanelLiner, NODE_UL_stm_list,
                             init_prefs, StmChannelSocket, StmChannelSockets,StmShaders, StmNodes,)
 
 classes = (
+    StringItem,
     StmProps,
     NodesLinks,
     ShaderLinks,
