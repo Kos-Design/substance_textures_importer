@@ -1,43 +1,14 @@
 import bpy
-from bpy.props import (StringProperty, IntProperty, BoolProperty,
+from bpy.props import (StringProperty, IntProperty, BoolProperty,IntVectorProperty,BoolVectorProperty,
                         PointerProperty, CollectionProperty,EnumProperty)
 from bpy.types import (PropertyGroup, UIList,AddonPreferences)
-from . propertieshandler import PropertiesHandler, set_wish
-from . propertygroups import (StmProps, enum_sockets_cb, auto_mode_up,
-                                ch_sockets_up, enum_sockets_up, manual_up,
-                                split_rgb_up, line_on_up, NodesLinks, ShaderLinks)
-from . panels import draw_panel,NODE_PT_stm_options
 
-propper = PropertiesHandler()
+from . functions import (lines, enum_sockets_cb, auto_mode_up, ch_sockets_up, enum_sockets_up, manual_up,
+                                split_rgb_up, line_on_up, draw_panel,draw_options,get_name_up,set_name_up,
+                                get_line_bools,set_line_bools,get_line_vals,set_line_vals)
 
-def get_name_up(self):
-    return self.get("name","")
+from . propertygroups import (StmProps, NodesLinks, ShaderLinks)
 
-def set_name_up(self, value):
-    self["name"] = value
-    try:
-        if (self.auto_mode and not self.manual) or self.split_rgb:
-            propper.default_sockets(self)
-            if self.split_rgb :
-                ch_sockets_up(self,bpy.context)
-            elif self.auto_mode:
-                enum_sockets_up(self,bpy.context)
-        propper.wish = set_wish()
-    except AttributeError:
-        print(f"error during sockets update {propper.wish}" )
-
-def init_prefs():
-    prefs = bpy.context.preferences.addons[__package__].preferences
-    if len(prefs.shader_links) == 0:
-        prefs.shader_links.add()
-    if len(prefs.maps.textures) == 0:
-        maps = ["Color","Metallic","Roughness","Normal"]
-        for i in range(4):
-            item = prefs.maps.textures.add()
-            item.name = f"{maps[i]}"
-            item['input_sockets'] = i+2 +(int(not i%3)*2)*int(bool(i))
-            #item.input_sockets = f"{'' if i else 'Base '}{maps[i]}"
-            propper.make_clean_channels(item)
 
 class StmChannelSocket(PropertyGroup):
     input_sockets: EnumProperty(
@@ -65,6 +36,10 @@ class StmPanelLines(PropertyGroup):
         get=get_name_up,
         set=set_name_up
     )
+    line_id: IntProperty()
+
+    line_bools: BoolVectorProperty(get=get_line_bools,set=set_line_bools,size=4)
+    line_vals: IntVectorProperty(get=get_line_vals,set=set_line_vals,size=4)
 
     channels: PointerProperty(type=StmChannelSockets)
 
@@ -159,9 +134,8 @@ class StmAddonPreferences(AddonPreferences):
     def draw(self, context):
         layout = self.layout
         layout.prop(self.props, 'usr_dir',text="Textures folder:")
-        layout.label(text="Default maps:")
         draw_panel(self,context)
-        NODE_PT_stm_options.draw(self, context)
+        draw_options(self,context)
         row = layout.row()
         row.label(text="Separator used for multi-sockets: ")
         row.split(factor=10)
