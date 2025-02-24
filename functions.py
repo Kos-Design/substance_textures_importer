@@ -61,11 +61,12 @@ def get_shaders_list_eve():
     return shaders_list
 
 def get_shaders_list():
-    if bpy.context.scene.render.engine == 'BLENDER_EEVEE_NEXT' :
-        return get_shaders_list_eve()
-    if bpy.context.scene.render.engine == 'CYCLES' :
-        return get_shaders_list_cycles()
-    return None
+    if getattr(bpy.context,'scene',None):
+        if getattr(bpy.context.scene.render,'engine','BLENDER_EEVEE_NEXT') == 'BLENDER_EEVEE_NEXT' :
+            return get_shaders_list_eve()
+        if bpy.context.scene.render.engine == 'CYCLES' :
+            return get_shaders_list_cycles()
+    return get_shaders_list_eve()
 
 def make_clean_channels(line):
     line.channels.socket.clear()
@@ -175,7 +176,6 @@ def refresh_shader_links():
             new_shader_link.shadertype = node_type
             for sk in [i for i in new_node.inputs.keys() if not i == 'Weight']:
                 si = new_shader_link.in_sockets.add()
-                #print(sk)
                 si.name = sk
 
     for shader_enum in get_shaders_list_cycles():
@@ -284,13 +284,6 @@ def node_finder(node):
         return None
     return node
 
-def get_shader_node():
-    shader_node = None
-    output_node = get_output_node()
-    if output_node :
-        shader_node = node_finder(get_linked_node(output_node.inputs["Surface"]))
-    return shader_node
-
 def get_output_node():
     if not stm_nodes():
         return None
@@ -299,6 +292,14 @@ def get_output_node():
         if node.is_active_output:
             return node
     return None
+
+def get_shader_node():
+    shader_node = None
+    output_node = get_output_node()
+    if output_node :
+        shader_node = node_finder(get_linked_node(output_node.inputs["Surface"]))
+    return shader_node
+
 
 def get_target_mats(context):
         mat_list = []
@@ -642,7 +643,7 @@ def set_name_up(self, value):
             elif self.auto_mode:
                 enum_sockets_up(self,bpy.context)
     except AttributeError:
-        print(f"error during sockets update {wish}" )
+        pass
 
 def get_line_bools(self):
     return [self.line_on,self.auto_mode,self.split_rgb,self.manual]
@@ -656,7 +657,7 @@ def get_line_vals(self):
 def set_line_vals(self, value):
     self['input_sockets'], self.channels.socket[0]['input_sockets'], self.channels.socket[1]['input_sockets'], self.channels.socket[2]['input_sockets'] = value
 
-def init_prefs():
+def init_prefs(self):
     prefs = bpy.context.preferences.addons[__package__].preferences
     if len(prefs.shader_links) == 0:
         prefs.shader_links.add()
@@ -666,8 +667,11 @@ def init_prefs():
             item = prefs.maps.textures.add()
             item.name = f"{maps[i]}"
             item['input_sockets'] = i+2 +(int(not i%3)*2)*int(bool(i))
-            #item.input_sockets = f"{'' if i else 'Base '}{maps[i]}"
             make_clean_channels(item)
+    refresh_props(props(),bpy.context)
+    self.liners.clear()
+    for line in lines():
+        l = self.liners.add()
 
 def line_on_up(self, context):
     default_sockets(self)
@@ -790,6 +794,8 @@ def ch_sockets_up(self, context):
 
 def shaders_list_cb(self, context):
     return get_shaders_list()
+    #else:
+    #    return [('ShaderNodeBsdfPrincipled', 'Principled BSDF', '')]
 
 def shaders_list_up(self, context):
     #forces rebuilding the sockets list

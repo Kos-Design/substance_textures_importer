@@ -128,16 +128,23 @@ class StmAddonPreferences(AddonPreferences):
                         description="Uncheck this option to hide the Extension panel\
                                      from the Shader Nodes Editor Sidebar. \
                                     \n It will remain available in the File menu\
-                                     > Import > Substance Textures")
+                                     > Import > Substance Texturesand and via \
+                                    \n F3 Search > Import Surfacing Textures")
+    display_in_properties: BoolProperty(
+                        default=False,
+                        description="Check this option to show the Extension panel\
+                                     in the Material Properties Panel. \
+                                    \n It will remain available in the File menu\
+                                     > Import > Substance Textures and via \
+                                    \n F3 Search > Import Surfacing Textures")
     props: bpy.props.PointerProperty(type=StmProps)
 
     def draw(self, context):
         layout = self.layout
-        layout.prop(self.props, 'usr_dir',text="Textures folder:")
-        draw_panel(self,context)
-        draw_options(self,context)
+        layout.operator('node.stm_surfacing_setup',text="Show Extension Panel")
         row = layout.row()
         row.label(text="Separator used for multi-sockets: ")
         row.split(factor=10)
         row.prop(self.props,'separators_list',text="")
-        layout.prop(self,'display_in_editor',text="Display Panel in Shader Nodes Editor")
+        layout.prop(self,'display_in_editor',text="Display shortcut button in Shader Nodes Editor")
+        layout.prop(self,'display_in_properties',text="Display shortcut button in Material Properties")

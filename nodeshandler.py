@@ -149,7 +149,7 @@ class NodeHandler(MaterialHolder):
                 substitute_shader = shader_node.bl_idname
             if props().include_ngroups:
                 #handles custom shaders
-                if substitute_shader in bpy.data.node_groups.keys():
+                if substitute_shader in bpy.data.node_groups.keys() and props().replace_shader:
                     shader_node = stm_nodes().new('ShaderNodeGroup')
                     shader_node.node_tree = bpy.data.node_groups[substitute_shader]
                 else :
@@ -158,13 +158,11 @@ class NodeHandler(MaterialHolder):
                     set_enum_sockets_items()
                     refresh_shader_links()
                     guess_sockets()
-                    if substitute_shader in bpy.data.node_groups.keys():
-                        self.shader_node = stm_nodes().new('ShaderNodeGroup')
+                    if substitute_shader in bpy.data.node_groups.keys() and props().replace_shader:
+                        self.shader_node = shader_node = stm_nodes().new('ShaderNodeGroup')
                         self.shader_node.node_tree = bpy.data.node_groups[substitute_shader]
-                    else:
-                        print("Error during custom shaders gathering")
-                        self.shader_node = shader_node
-                        return
+                    elif not shader_node:
+                        shader_node = stm_nodes().new(props().shaders_list)
 
             elif hasattr(bpy.types,substitute_shader) :
                 shader_node = stm_nodes().new(substitute_shader)
@@ -175,6 +173,15 @@ class NodeHandler(MaterialHolder):
             #if props().replace_shader:
             #    stm_nodes().remove(get_shader_node())
         self.shader_node = shader_node
+
+    def check_mat(self):
+        mat = get_a_mat()
+        if not mat:
+            ShowMessageBox(f"No valid material found",
+                            'FAKE_USER_ON')
+            return False
+        self.mat = bpy.context.window_manager['current_mat'] = mat
+        return True
 
     def set_output_node(self):
         shd = get_shader_node()
@@ -467,8 +474,6 @@ class NodeHandler(MaterialHolder):
             for input_source, input_target in zip(source_node.inputs, target_node.inputs):
                 if hasattr(input_source, 'default_value'):
                     input_target.default_value = input_source.default_value
-        else:
-            print(f"cant copy {source_node.name} to {target_node.name}")
 
     def make_rgb_green_inverted(self):
         material = self.mat

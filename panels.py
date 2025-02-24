@@ -1,8 +1,10 @@
 import bpy
 from bpy.types import Panel
-from . functions import draw_options,draw_panel
+from . functions import draw_options,draw_panel,get_a_mat
 
-class TexImporterPanel():
+class NODE_PT_stm_nodes_panel(Panel):
+    bl_idname = "NODE_PT_stm_nodes_panel"
+    bl_label = "Substance Texture Importer"
     bl_context = "material"
     bl_space_type = 'NODE_EDITOR'
     bl_region_type = 'UI'
@@ -11,16 +13,26 @@ class TexImporterPanel():
     @classmethod
     def poll(cls, context):
         try:
-            return context.preferences.addons[__package__].preferences.display_in_editor
+            return get_a_mat() and context.preferences.addons[__package__].preferences.display_in_editor
         except (TypeError,NameError,KeyError,ValueError,AttributeError,OverflowError):
             return False
 
-class NODE_PT_stm_importpanel(TexImporterPanel, Panel):
-    bl_idname = "NODE_PT_stm_importpanel"
+    def draw(self, context):
+        self.layout.operator("node.stm_surfacing_setup",text="Show importer...")
+
+class MATERIAL_PT_stm_material_panel(Panel):
     bl_label = "Substance Texture Importer"
+    bl_idname = "MATERIAL_PT_stm_material_panel"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "material"
+
+    @classmethod
+    def poll(cls, context):
+        try:
+            return context.active_object and context.active_object.active_material and context.preferences.addons[__package__].preferences.display_in_properties
+        except (TypeError,NameError,KeyError,ValueError,AttributeError,OverflowError):
+            return False
 
     def draw(self, context):
-        layout = self.layout
-        row = layout.row()
-        row.operator("node.stm_smooth_operator",text="Show importer panel")
-
+        self.layout.operator("node.stm_surfacing_setup",text="Show importer...")

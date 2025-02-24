@@ -16,14 +16,14 @@ from . propertygroups import ( StringItem,LinerItem,ShaderLinks, NodesLinks, Stm
 
 from . operators import ( NODE_OT_stm_reset_substance_textures,
                           NODE_OT_stm_move_line,NODE_OT_stm_add_substance_texture,NODE_OT_stm_del_substance_texture,
-                          NODE_OT_stm_smooth_operator,NODE_OT_stm_fill_names,IMPORT_OT_stm_window)
+                          NODE_OT_stm_surfacing_setup,NODE_OT_stm_fill_names,IMPORT_OT_stm_window)
 
-from . panels import ( NODE_PT_stm_importpanel )
+from . panels import ( NODE_PT_stm_nodes_panel,MATERIAL_PT_stm_material_panel )
 
 from . preferences import (StmAddonPreferences, StmPanelLiner, NODE_UL_stm_list, StmPanelLines,
                             StmChannelSocket, StmChannelSockets,StmShaders, StmNodes,)
 
-from . functions import init_prefs,menu_func
+from . functions import menu_func
 
 classes = (
     LinerItem,
@@ -33,11 +33,11 @@ classes = (
     ShaderLinks,
     StmShaders,
     StmNodes,
-    NODE_OT_stm_smooth_operator,
+    NODE_OT_stm_surfacing_setup,
     NODE_OT_stm_fill_names,
     NODE_OT_stm_add_substance_texture,
     NODE_OT_stm_del_substance_texture,
-    NODE_PT_stm_importpanel,
+    NODE_PT_stm_nodes_panel,
     StmChannelSocket,
     StmChannelSockets,
     StmPanelLines,
@@ -46,6 +46,7 @@ classes = (
     NODE_UL_stm_list,
     IMPORT_OT_stm_window,
     NODE_OT_stm_reset_substance_textures,
+    MATERIAL_PT_stm_material_panel,
     NODE_OT_stm_move_line
     )
 
@@ -53,7 +54,6 @@ def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
-    init_prefs()
     bpy.types.TOPBAR_MT_file_import.append(menu_func)
 
 def unregister():

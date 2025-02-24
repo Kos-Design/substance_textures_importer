@@ -76,8 +76,6 @@ class NODE_OT_stm_fill_names(SubOperatorPoll,Operator):
 
 
 class BasePanel():
-    bl_options = {"REGISTER", "UNDO",'PRESET'}
-
     @classmethod
     def poll(cls, context):
         try:
@@ -105,10 +103,11 @@ class BasePanel():
     liners: CollectionProperty(type=LinerItem)
 
 
-class NODE_OT_stm_smooth_operator(BasePanel,Operator):
-    bl_idname = "node.stm_smooth_operator"
-    bl_label = "Label me..."
-    bl_description = "Describe me"
+class NODE_OT_stm_surfacing_setup(BasePanel,Operator):
+    bl_idname = "node.stm_surfacing_setup"
+    bl_label = "Import Surfacing Textures"
+    bl_description = "Import textures created with substance or other similar 3D surfacing/painting tools"
+    bl_options = {"REGISTER", "UNDO",'PRESET'}
 
     def execute(self, context):
         if not len(get_target_mats(context))>0:
@@ -137,16 +136,9 @@ class NODE_OT_stm_smooth_operator(BasePanel,Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        mat = get_a_mat()
-        if not mat:
-            ShowMessageBox(f"No valid material found",
-                            'FAKE_USER_ON')
+        if not ndh.check_mat():
             return {'CANCELLED'}
-        ndh.mat = bpy.context.window_manager['current_mat'] = mat
-        refresh_props(props(),bpy.context)
-        self.liners.clear()
-        for line in lines():
-            l = self.liners.add()
+        init_prefs(self)
         return context.window_manager.invoke_props_dialog(self)
 
     def draw(self, context):
@@ -158,8 +150,9 @@ class NODE_OT_stm_smooth_operator(BasePanel,Operator):
 
 class IMPORT_OT_stm_window(BasePanel,Operator):
     bl_idname = "import.stm_window"
-    bl_label = "Import Textures"
-    bl_description = "Open a substance textures importer panel"
+    bl_label = "Substance Textures Importer Window"
+    bl_description = "Open a substance textures importer window panel"
+    bl_options = {"INTERNAL", "UNDO",'PRESET'}
 
     def execute(self, context):
         for i in range (2):
@@ -168,6 +161,9 @@ class IMPORT_OT_stm_window(BasePanel,Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
+        if not ndh.check_mat():
+            return {'CANCELLED'}
+        init_prefs(self)
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
