@@ -3,10 +3,10 @@ import bpy
 bl_info = {
     "name": "Substance Textures Importer",
     "author": "Cosmin Planchon",
-    "version": (0, 6, 1),
+    "version": (0, 7, 0),
     "blender": (4, 2, 0),
-    "location": "Shader editor > Sidebar > STM",
-    "description": "Import & autoassign images from Substance Painter or similar 3D painting tools",
+    "location": "File > Import > Substance Textures",
+    "description": "Import & autoassign images from Substance or similar 3D painting tools",
     "warning": "",
     "wiki_url": "https://github.com/Kos-Design/substance_textures_importer/blob/main/readme.rst",
     "tracker_url": "https://github.com/Kos-Design/substance_textures_importer/issues",

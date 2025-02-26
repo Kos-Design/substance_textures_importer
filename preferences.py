@@ -3,103 +3,8 @@ from bpy.props import (StringProperty, IntProperty, BoolProperty,IntVectorProper
                        BoolVectorProperty, PointerProperty, CollectionProperty,EnumProperty)
 from bpy.types import (PropertyGroup, UIList,AddonPreferences)
 
-from . functions import ( enum_sockets_cb, auto_mode_up, ch_sockets_up, enum_sockets_up, manual_up,
-                        split_rgb_up, line_on_up, get_name_up,set_name_up,
-                        get_line_bools,set_line_bools,get_line_vals,set_line_vals)
-
-from . propertygroups import (StmProps, NodesLinks, ShaderLinks)
-
-
-class StmChannelSocket(PropertyGroup):
-    input_sockets: EnumProperty(
-        name="Input socket",
-        description="Target shader input sockets for this texture node.\
-                    \n Selected automaticaly if -Detect target socket- is enabled",
-        items=enum_sockets_cb,
-        update=ch_sockets_up
-    )
-    line_name: StringProperty(
-        name="Color",
-        description="name of the line owning this instance",
-        default="Select a name"
-    )
-
-
-class StmChannelSockets(PropertyGroup):
-    socket: CollectionProperty(type=StmChannelSocket)
-
-
-class StmPanelLines(PropertyGroup):
-    name: StringProperty(
-        name="name",
-        description="Keyword identifier of the texture map to import",
-        get=get_name_up,
-        set=set_name_up
-    )
-    line_id: IntProperty()
-
-    line_bools: BoolVectorProperty(get=get_line_bools,set=set_line_bools,size=4)
-    line_vals: IntVectorProperty(get=get_line_vals,set=set_line_vals,size=4)
-
-    channels: PointerProperty(type=StmChannelSockets)
-
-    file_name: StringProperty(
-        name="File",
-        subtype='FILE_PATH',
-        description="Complete filepath of the texture map",
-        default="Select a file"
-    )
-    auto_mode: BoolProperty(
-        name="Detect target socket",
-        description="Auto detect target shader socket",
-        default=True,
-        update=auto_mode_up
-    )
-    input_sockets: EnumProperty(
-        name="",
-        description="Target shader input sockets for this texture node.\
-                    \n Selected automaticaly if Autodetect sockets is enabled",
-        items=enum_sockets_cb,
-        update=enum_sockets_up
-    )
-    file_is_real: BoolProperty(
-        description="Associated file exists",
-        default=False
-    )
-    manual: BoolProperty(
-        name='Overwrite file name',
-        description="Manual mode switch",
-        default=False,
-        update=manual_up
-    )
-    line_on: BoolProperty(
-        name="Active",
-        description="Enable/Disable line",
-        default=True,
-        update=line_on_up
-    )
-    split_rgb: BoolProperty(
-        name="Split rgb channels",
-        description="Split the RGB channels of the target image \
-                        to plug them into individual sockets",
-        default=False,
-        update=split_rgb_up
-    )
-
-
-class StmPanelLiner(PropertyGroup):
-    textures: CollectionProperty(type=StmPanelLines)
-    texture_index: IntProperty(default=0)
-
-
-class StmNodes(PropertyGroup):
-    node_links: CollectionProperty(type=NodesLinks)
-    node_index: IntProperty(default=0)
-
-
-class StmShaders(PropertyGroup):
-    shader_links: CollectionProperty(type=ShaderLinks)
-    shader_index: IntProperty(default=0)
+from . propertygroups import (StmProps, NodesLinks, ShaderLinks, StmChannelSocket,StmShaders,
+                               StmChannelSockets,StmPanelLines, StmPanelLiner, StmNodes)
 
 
 class NODE_UL_stm_list(UIList):
@@ -137,6 +42,9 @@ class StmAddonPreferences(AddonPreferences):
                                     \n It will remain available in the File menu\
                                      > Import > Substance Textures and via \
                                     \n F3 Search > Import Surfacing Textures")
+    debug_results: BoolProperty(
+                        default=True,
+                        description="Show extension activity in Blender console")
     props: bpy.props.PointerProperty(type=StmProps)
 
     def draw(self, context):
@@ -144,10 +52,11 @@ class StmAddonPreferences(AddonPreferences):
         row = layout.row()
         row.prop(self.props, 'usr_dir',text="Textures folder:")
         row = layout.row()
-        row.operator('node.stm_surfacing_setup',text="Show Extension Panel")
+        row.operator('node.stm_surfacing_setup',text="Show Substance Texture Importer Panel")
         row = layout.row()
         row.label(text="Separator used for multi-sockets: ")
         row.split(factor=10)
         row.prop(self.props,'separators_list',text="")
-        layout.prop(self,'display_in_editor',text="Display shortcut button in Shader Nodes Editor")
-        layout.prop(self,'display_in_properties',text="Display shortcut button in Material Properties")
+        layout.prop(self,'display_in_editor',text="Display shortcut button in Shader Nodes Editor.")
+        layout.prop(self,'display_in_properties',text="Display shortcut button in Material Properties.")
+        layout.prop(self,'debug_results',text="Show output messages in console.")

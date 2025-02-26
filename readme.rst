@@ -10,13 +10,20 @@ Substance Textures Importer
 Description:
 ------------
 
-Blender extension designed to import images textures made with Substance Painter or other similar surfacing tools into Blender 3D easily.
+Blender extension designed to import images textures made with Substance Painter or similar surfacing tools into Blender 3D easily.
 The script looks at all the images in the chosen directory and attempts to guess the corresponding shader input to plug them into.
 According to the target materials names, the algorithm will look for a matching image name pattern to fill the selected map names enabled in the UI panel.
-The extension panel is available via the File menu > Import > Substance textures and in the Shader Nodes Editor SideBar > STM Tab.
+The extension panel is available via a shortcut button in the File menu > Import > Substance textures and in the Shader Nodes Editor SideBar > STM Tab (optional).
+Also, an option is available in the extension preferences to have a shortcut button displayed in the Material properties as well.
 The texture maps names are editable and can include up to 3 multi-channel maps. The target shader input socket can be set from a drop-down list for better control.
 
 .. figure:: http://kos-design.com/images/wikipics/import_panel.jpg
+   :align: left
+
+
+Portable panel displayed when using the shortcut in Nodes editor or the optional Material properties:
+
+.. figure:: http://kos-design.com/images/wikipics/panel_compact.png
    :align: left
 
 The texture files must have been exported using a pattern containing the material name and a map type (BaseColor, Metallic, Roughness, Normal etc.).
@@ -39,7 +46,7 @@ Installation:
 
 https://youtu.be/lumrnhikSOg
 
-`Download the latest git release of Substance Textures Importer from here <https://github.com/Kos-Design/substance_textures_importer/releases/download/0.6.0/Substance_Textures_Importer.zip>`__
+`Download the latest git release of Substance Textures Importer from here <https://github.com/Kos-Design/substance_textures_importer/releases/download/0.7.0/Substance_Textures_Importer.zip>`__
 and install it in Blender via Edit > Preferences > Add-ons > Install an Addon.
 
 Once installed, enable like the other add-ons by ticking the checkbox in front of “Substance Textures Importer”.
@@ -50,12 +57,14 @@ The user interface panel is available from the Material section in the Propertie
 How-to:
 -------
 
-`Basic Features & How-to Video tutorial <https://youtu.be/45rky8J_0us>`__
+`Basic Features & How-to Video tutorial (Outdated video) <https://youtu.be/45rky8J_0us>`__
+
 
 https://youtu.be/45rky8J_0us
 
-The panel labeled "Substance Textures Importer" is displayed under the Shader Settings in the Material Tab.
-
+The panel labeled "Substance Textures Importer" is available via a button in the File > Import menu or
+the side bar of the Nodes editor (STM tab) and can have a button displayed in the Material Tab if you set it in the addon preferences.
+This will open a panel with a default list of textures names.
 First set the desired target in the 'Target' dropdown list at the top and choose the directory containing the textures files to be imported using the folder selection window or the field under the "Maps Folder" section of the Shader Node Editor Panel.
 After setting the folder, modify the texture maps names ('Color','Roughness'...) to fit your naming pattern,
 or use the '2-gears' button at the right of the list to attempt to auto-fill the line names if the current material name is detected in the folder content.
@@ -66,28 +75,17 @@ The button with the chip icon below restores the line names to a default set of 
 
 You can enable/disable the textures maps type you wish to import by ticking the 'Active' checkmark under the maps list in the addon panel (you can also add/delete more lines and edit the texture map name if needed)
 
-Then you can use the "Import Substance Maps" button to batch import the images into their associated shaders sockets.
+By default the script will import the images for all selected objects at once, the target can also be set to every scene materials, all visible objects materials, only the active object or only the active material of each selected object.
 
-.. figure:: http://kos-design.com/images/wikipics/import_maps.jpg
+The separator character used to identify multi-sockets lines is configurable in the extension preferences panel ( separators currently available: _ - , ; . + & ).
+
+.. figure:: http://kos-design.com/images/wikipics/preferences.jpg
    :align: left
-
-Or use the "Only Setup Nodes" button below to only create empty image nodes,
-
-.. figure:: http://kos-design.com/images/wikipics/only_setup.jpg
-   :align: left
-
-and then use the "Only Assign Images" button next to it to fill these images nodes with the matching textures files.
-
-.. figure:: http://kos-design.com/images/wikipics/only_assign.jpg
-   :align: left
-
-By default the script will import the images for all selected objects at once, there are also some options to import them for all visible objects, only the active object or only the active material of each selected object.
-
 
 Options:
 --------
 
-.. figure:: http://kos-design.com/images/wikipics/preferences.jpg
+.. figure:: http://kos-design.com/images/wikipics/Options2.png
    :align: left
 
 ---------------
@@ -131,10 +129,16 @@ Duplicated material compatibility:
 ----------------------------------
 Enable this option to ignore the .00x prefix from the target materials names.
 
---------------------------
-Map names from files:
---------------------------
-When enabled the script will try to fill the line names when the texture folder gets set. The current material name should be included in the images names from that folder for better chances of success.
+----------------------------------
+Setup Nodes:
+----------------------------------
+Required to create the nodetree connecting the images to their respective sockets.
+
+----------------------------------
+Assign Images:
+----------------------------------
+This option should be enabled if you want to load the textures images in their respective nodes.
+
 
 ------------
 Manual Mode:
@@ -148,10 +152,7 @@ the addon will skip the name pattern detection and will use the path you select 
 
 Presets:
 --------
-The icon in the top-right corner allows you to store and loads the parameters used in the UI panel.
-
-.. figure:: http://kos-design.com/images/wikipics/preset.png
-   :align: left
+The 'Operator Presets' dropdown list at the top of the panel allows you to store and loads the parameters used in the UI panel.
 
 License
 -------

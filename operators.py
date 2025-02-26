@@ -125,19 +125,15 @@ class BasePanel():
                             'FAKE_USER_ON')
             return {'CANCELLED'}
         if props().setup_nodes:
-            self.report({'INFO'}, ("\n").join(ndh.report_content))
             ndh.handle_nodes(True)
-            ShowMessageBox("Check Shader nodes panel",
-                            "Nodes created",
-                            'FAKE_USER_ON')
+            if context.preferences.addons[__package__].preferences.debug_results:
+                self.report({'INFO'}, ("\n").join(ndh.report_content))
         if props().assign_images:
             ndh.handle_nodes()
             if ndh.report_content :
-                self.report({'INFO'}, ("\n").join(ndh.report_content))
-                img_count = len([l for l in ndh.report_content if "assigned" in l])
-                ShowMessageBox(f"{img_count} matching images loaded",
-                                "Images assigned to respective nodes",
-                                'FAKE_USER_ON')
+                if context.preferences.addons[__package__].preferences.debug_results:
+                    ndh.report_content.insert(0,f' {len([l for l in ndh.report_content if "assigned" in l])} images assigned')
+                    self.report({'INFO'}, ("\n ").join(ndh.report_content))
         return {'FINISHED'}
 
 class NODE_OT_stm_surfacing_setup(BasePanel,Operator):

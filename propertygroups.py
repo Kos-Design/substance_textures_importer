@@ -1,12 +1,16 @@
 import bpy
-from bpy.props import (StringProperty,IntProperty,BoolProperty,IntVectorProperty,
-                        BoolVectorProperty,EnumProperty,CollectionProperty)
+from bpy.props import ( StringProperty,IntProperty,BoolProperty,
+                        IntVectorProperty,BoolVectorProperty,
+                        EnumProperty,CollectionProperty,PointerProperty)
 from bpy.types import PropertyGroup
 from . functions import (include_ngroups_up,clear_nodes_up,target_list_cb,target_list_up,
                         usr_dir_up,get_liners_bools,set_liners_vals,get_liners_name,
                         set_liners_name,set_liners_bools,get_liners_vals,
                         replace_shader_up,shaders_list_cb,shaders_list_up,separators_cb,
-                        advanced_mode_up,only_active_mat_up)
+                        advanced_mode_up,only_active_mat_up, enum_sockets_cb,
+                        auto_mode_up, ch_sockets_up, enum_sockets_up, manual_up,
+                        split_rgb_up, line_on_up, get_name_up,set_name_up,
+                        get_line_bools,set_line_bools,get_line_vals,set_line_vals)
 
 class StringItem(PropertyGroup):
 
@@ -55,6 +59,98 @@ class NodesLinks(PropertyGroup):
         default="{'0':''}"
     )
     in_sockets : CollectionProperty(type=StringItem)
+
+
+class StmChannelSocket(PropertyGroup):
+    input_sockets: EnumProperty(
+        name="Input socket",
+        description="Target shader input sockets for this texture node.\
+                    \n Selected automaticaly if -Detect target socket- is enabled",
+        items=enum_sockets_cb,
+        update=ch_sockets_up
+    )
+    line_name: StringProperty(
+        name="Color",
+        description="name of the line owning this instance",
+        default="Select a name"
+    )
+
+
+class StmChannelSockets(PropertyGroup):
+    socket: CollectionProperty(type=StmChannelSocket)
+
+
+class StmPanelLines(PropertyGroup):
+    name: StringProperty(
+        name="name",
+        description="Keyword identifier of the texture map to import",
+        get=get_name_up,
+        set=set_name_up
+    )
+    line_id: IntProperty()
+
+    line_bools: BoolVectorProperty(get=get_line_bools,set=set_line_bools,size=4)
+    line_vals: IntVectorProperty(get=get_line_vals,set=set_line_vals,size=4)
+
+    channels: PointerProperty(type=StmChannelSockets)
+
+    file_name: StringProperty(
+        name="File",
+        subtype='FILE_PATH',
+        description="Complete filepath of the texture map",
+        default="Select a file"
+    )
+    auto_mode: BoolProperty(
+        name="Detect target socket",
+        description="Auto detect target shader socket",
+        default=True,
+        update=auto_mode_up
+    )
+    input_sockets: EnumProperty(
+        name="",
+        description="Target shader input sockets for this texture node.\
+                    \n Selected automaticaly if Autodetect sockets is enabled",
+        items=enum_sockets_cb,
+        update=enum_sockets_up
+    )
+    file_is_real: BoolProperty(
+        description="Associated file exists",
+        default=False
+    )
+    manual: BoolProperty(
+        name='Overwrite file name',
+        description="Manual mode switch",
+        default=False,
+        update=manual_up
+    )
+    line_on: BoolProperty(
+        name="Active",
+        description="Enable/Disable line",
+        default=True,
+        update=line_on_up
+    )
+    split_rgb: BoolProperty(
+        name="Split rgb channels",
+        description="Split the RGB channels of the target image \
+                        to plug them into individual sockets",
+        default=False,
+        update=split_rgb_up
+    )
+
+
+class StmPanelLiner(PropertyGroup):
+    textures: CollectionProperty(type=StmPanelLines)
+    texture_index: IntProperty(default=0)
+
+
+class StmNodes(PropertyGroup):
+    node_links: CollectionProperty(type=NodesLinks)
+    node_index: IntProperty(default=0)
+
+
+class StmShaders(PropertyGroup):
+    shader_links: CollectionProperty(type=ShaderLinks)
+    shader_index: IntProperty(default=0)
 
 
 class StmProps(PropertyGroup):
@@ -182,3 +278,4 @@ class StmProps(PropertyGroup):
                         \n  as the original ones (ignores the .00x suffix)",
         default=True
     )
+
