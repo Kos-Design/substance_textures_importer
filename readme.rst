@@ -79,7 +79,7 @@ By default the script will import the images for all selected objects at once, t
 
 The separator character used to identify multi-sockets lines is configurable in the extension preferences panel ( separators currently available: _ - , ; . + & ).
 
-.. figure:: http://kos-design.com/images/wikipics/preferences.jpg
+.. figure:: http://kos-design.com/images/wikipics/stm_preferences.jpg
    :align: left
 
 Options:
