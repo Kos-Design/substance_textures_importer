@@ -31,7 +31,7 @@ The texture files must have been exported using a pattern containing the materia
 You can use the Split RGB option to connect the Red, Green and Blue channels individually if your textures include separate maps mixed in.
 When 'Detect target socket' is enabled the script will parse the line name and fill in the input socket if a match is found and Line names like 'alpha_ior_metal' will be recognized as split-rgb.
 
-.. figure:: http://kos-design.com/images/wikipics/panel_multi_sockets.gif
+.. figure:: http://kos-design.com/images/wikipics/stm_panel_multi_sockets.gif
    :align: left
 
 Note: 'Detect target socket' should be disabled to be able to manually select a target socket for a texture map or the drop-down list will overwritten and appear grayed out.
@@ -70,7 +70,7 @@ After setting the folder, modify the texture maps names ('Color','Roughness'...)
 or use the '2-gears' button at the right of the list to attempt to auto-fill the line names if the current material name is detected in the folder content.
 The button with the chip icon below restores the line names to a default set of values.
 
-.. figure:: http://kos-design.com/images/wikipics/panel_lines.gif
+.. figure:: http://kos-design.com/images/wikipics/stm_panel_lines.gif
    :align: left
 
 You can enable/disable the textures maps type you wish to import by ticking the 'Active' checkmark under the maps list in the addon panel (you can also add/delete more lines and edit the texture map name if needed)
