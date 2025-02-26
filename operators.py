@@ -1,10 +1,22 @@
 import bpy
-from pathlib import Path
 from bpy.types import Operator
 from bpy.props import (StringProperty,IntProperty,BoolProperty,CollectionProperty)
 from . nodeshandler import NodeHandler
 from . propertygroups import LinerItem
-from . functions import *
+from . functions import (   ShowMessageBox, add_panel_lines, del_panel_line, draw_options,
+                            get_cb_advanced_mode, get_cb_assign_images, get_cb_clear_nodes,
+                            get_cb_dup_mat_compatible, get_cb_include_ngroups, get_cb_mode_opengl,
+                            get_cb_only_active_mat, get_cb_replace_shader, get_cb_separators_list,
+                            get_cb_setup_nodes, get_cb_shaders_list, get_cb_skip_normals,
+                            get_cb_target, get_cb_tweak_levels, get_cb_usr_dir, get_lines_count,
+                            get_target_mats, init_prefs, initialize_defaults, lines, props,
+                            set_cb_advanced_mode, set_cb_assign_images, set_cb_clear_nodes,
+                            set_cb_dup_mat_compatible, set_cb_include_ngroups, set_cb_mode_opengl,
+                            set_cb_only_active_mat, set_cb_replace_shader, set_cb_separators_list,
+                            set_cb_setup_nodes, set_cb_shaders_list, set_cb_skip_normals,synch_dirs,
+                            set_cb_target, set_cb_tweak_levels, set_cb_usr_dir, set_lines_count,
+                            synch_names, texture_importer, texture_index,draw_panel,get_a_mat
+                        )
 
 ndh = NodeHandler()
 
@@ -71,7 +83,7 @@ class NODE_OT_stm_fill_names(SubOperatorPoll,Operator):
     bl_description = 'Rename panel lines from keywords detected in the texture files'
 
     def execute(self, context):
-        synch_names()
+        synch_names(self,context)
         return {'FINISHED'}
 
 
@@ -94,22 +106,20 @@ class BasePanel():
     cb_replace_shader: BoolProperty(get=get_cb_replace_shader,set=set_cb_replace_shader)
     cb_shaders_list: StringProperty(get=get_cb_shaders_list,set=set_cb_shaders_list)
     cb_separators_list: StringProperty(get=get_cb_separators_list,set=set_cb_separators_list)
-    cb_lines_from_files: BoolProperty(get=get_cb_lines_from_files,set=set_cb_lines_from_files)
     cb_advanced_mode: BoolProperty(get=get_cb_advanced_mode,set=set_cb_advanced_mode)
     cb_only_active_mat: BoolProperty(get=get_cb_only_active_mat,set=set_cb_only_active_mat)
     cb_assign_images: BoolProperty(get=get_cb_assign_images,set=set_cb_assign_images)
     cb_setup_nodes: BoolProperty(get=get_cb_setup_nodes,set=set_cb_setup_nodes)
     cb_dup_mat_compatible: BoolProperty(get=get_cb_dup_mat_compatible,set=set_cb_dup_mat_compatible)
     liners: CollectionProperty(type=LinerItem)
-
-
-class NODE_OT_stm_surfacing_setup(BasePanel,Operator):
-    bl_idname = "node.stm_surfacing_setup"
-    bl_label = "Import Surfacing Textures"
-    bl_description = "Import textures created with substance or other similar 3D surfacing/painting tools"
-    bl_options = {"REGISTER", "UNDO",'PRESET'}
+    show_options: BoolProperty(default=False)
+    directory: bpy.props.StringProperty(subtype='DIR_PATH')
 
     def execute(self, context):
+        space = context.space_data
+        if space.type in 'TOPBAR':
+            props().usr_dir = self.directory
+
         if not len(get_target_mats(context))>0:
             ShowMessageBox("No valid target material found, check Target selector",
                             'FAKE_USER_ON')
@@ -122,18 +132,20 @@ class NODE_OT_stm_surfacing_setup(BasePanel,Operator):
                             'FAKE_USER_ON')
         if props().assign_images:
             ndh.handle_nodes()
-            self.report({'INFO'}, ("\n").join(ndh.report_content))
-            img_count = len([l for l in ndh.report_content if "assigned" in l])
-            ShowMessageBox(f"{img_count} matching images loaded",
-                            "Images assigned to respective nodes",
-                            'FAKE_USER_ON')
-
-        """
-        for i in range (2):
-            ndh.handle_nodes(not i)
-            self.report({'INFO'},("\n").join(ndh.report_content) )
-        """
+            if ndh.report_content :
+                self.report({'INFO'}, ("\n").join(ndh.report_content))
+                img_count = len([l for l in ndh.report_content if "assigned" in l])
+                ShowMessageBox(f"{img_count} matching images loaded",
+                                "Images assigned to respective nodes",
+                                'FAKE_USER_ON')
         return {'FINISHED'}
+
+class NODE_OT_stm_surfacing_setup(BasePanel,Operator):
+    bl_idname = "node.stm_surfacing_setup"
+    bl_label = "Import Surfacing Textures"
+    bl_description = "Import textures created with substance \
+                    or other similar 3D surfacing/painting tools"
+    bl_options = {"REGISTER", "UNDO",'PRESET'}
 
     def invoke(self, context, event):
         if not ndh.check_mat():
@@ -142,7 +154,8 @@ class NODE_OT_stm_surfacing_setup(BasePanel,Operator):
         return context.window_manager.invoke_props_dialog(self)
 
     def draw(self, context):
-        self.layout.prop(props(), 'usr_dir',text="Textures folder:")
+        row = self.layout.row()
+        row.prop(props(), 'usr_dir',text="Folder ")
         draw_panel(self,context)
         if len(lines()) > 1 :
             draw_options(self,context)
@@ -154,13 +167,8 @@ class IMPORT_OT_stm_window(BasePanel,Operator):
     bl_description = "Open a substance textures importer window panel"
     bl_options = {"INTERNAL", "UNDO",'PRESET'}
 
-    def execute(self, context):
-        for i in range (2):
-            ndh.handle_nodes(not i)
-            self.report({'INFO'},("\n").join(ndh.report_content))
-        return {'FINISHED'}
-
     def invoke(self, context, event):
+        self.show_options = True
         if not ndh.check_mat():
             return {'CANCELLED'}
         init_prefs(self)
@@ -168,11 +176,6 @@ class IMPORT_OT_stm_window(BasePanel,Operator):
         return {'RUNNING_MODAL'}
 
     def draw(self, context):
-        space = context.space_data
-        params = space.params
-        #required for the 'Map names from files' option <- maybe make it a button-like feature instead of full auto
-        if props().usr_dir != params.directory.decode('utf-8'):
-            props().usr_dir = params.directory.decode('utf-8')
         draw_panel(self,context)
         if len(lines()) > 1 :
             draw_options(self,context)

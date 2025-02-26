@@ -36,7 +36,7 @@ def line_index(line):
     return None
 
 def mat_name_cleaner(mat_name):
-        return mat_name.split(".0")[0] if props().dup_mat_compatible else mat_name
+    return mat_name.split(".0")[0] if props().dup_mat_compatible else mat_name
 
 def get_shaders_list_eve():
     shaders_list = [
@@ -86,10 +86,8 @@ def initialize_defaults():
         default_sockets(item)
 
 def safe_refresh(context=None):
-    #wish = {line.name: (line['input_sockets'],[ch['input_sockets'] for ch in line.channels.socket]) for line in lines()}
     clean_input_sockets()
     refresh_shader_links()
-    #get_wish(wish)
 
 def get_shaders_list_cycles():
     shaders_list = [
@@ -206,7 +204,6 @@ def refresh_inputs():
 def check_special_keywords(term):
     if props().separators_list in term:
         return ""
-    #no spaces
     matcher = { "Color":["color","col","colore","colour","couleur", "basecolor",
                             "emit", "emission", "albedo"],
                 "Ambient Occlusion":["ambientocclusion","ambientocclusion","ambient",
@@ -223,20 +220,29 @@ def check_special_keywords(term):
             return k
     return ""
 
-def synch_names():
+def synch_dirs(context):
+    space = context.space_data
+    if space.type in 'FILE_BROWSER':
+        params = space.params
+        props().usr_dir = params.directory.decode('utf-8')
+
+def synch_names(self,context):
+    synch_dirs(context)
     liners = []
     props().img_files.clear()
     exts = set(bpy.path.extensions_image)
     dir_content = [x.name for x in Path(props().usr_dir).glob('*.*') if x.suffix.lower() in exts]
-    if len(dir_content) :
+    if len(dir_content) > 0:
         for img in dir_content:
             i = props().img_files.add()
             i.name = img
-        if mat_name_cleaner(stm_mat().name) in [i.name for i in props().img_files]:
-            mat_related = [Path(_img).stem.lower() for _img in dir_content if mat_name_cleaner(stm_mat().name) in _img]
-            prefix = commonprefix(mat_related)
-            suffix = commonprefix([s[::-1] for s in mat_related])
-            liners = sorted(list({i.replace(prefix,"").replace(suffix[::-1],"") for i in mat_related}))
+        for files in [i.name for i in props().img_files]:
+            if mat_name_cleaner(stm_mat().name) in files:
+                mat_related = [Path(_img).stem.lower() for _img in dir_content if mat_name_cleaner(stm_mat().name) in _img]
+                prefix = commonprefix(mat_related)
+                suffix = commonprefix([s[::-1] for s in mat_related])
+                liners = sorted(list({i.replace(prefix,"").replace(suffix[::-1],"") for i in mat_related}))
+                break
     if len(liners) > 1 :
         adjust_lines_count(len(liners)-len(lines()))
         for i,l in enumerate(lines()) :
@@ -265,7 +271,6 @@ def ShowMessageBox(message="", title="Message", icon='INFO'):
     def draw(self, context):
         self.layout.label(text=message)
     bpy.context.window_manager.popup_menu(draw, title=title, icon=icon)
-
 
 def get_linked_node(_socket):
     if _socket and _socket.is_linked:
@@ -300,36 +305,34 @@ def get_shader_node():
         shader_node = node_finder(get_linked_node(output_node.inputs["Surface"]))
     return shader_node
 
-
 def get_target_mats(context):
-        mat_list = []
-        validtypes = ['SURFACE', 'CURVE', 'META', 'MESH']
-        match props().target:
-            case "selected_objects":
-                if len(context.view_layer.objects):
-                    mat_list = list({mat.material for obj in context.view_layer.objects.selected if obj.type in validtypes for mat in obj.material_slots if mat.material is not None and not mat.material.is_grease_pencil})
-            case "all_visible":
-                if len(context.view_layer.objects):
-                    mat_list = list({mat.material for obj in context.view_layer.objects if obj.visible_get() and obj.type in validtypes for mat in obj.material_slots if mat.material is not None and not mat.material.is_grease_pencil})
-            case "all_objects":
-                if len(bpy.data.objects):
-                    mat_list = list({mat.material for obj in bpy.data.objects if obj.type in validtypes for mat in obj.material_slots if mat.material is not None and not mat.material.is_grease_pencil})
-            case "all_materials":
-                mat_list = [mat for mat in bpy.data.materials if not mat.is_grease_pencil]
-            case "active_obj":
-                obj = context.view_layer.objects.active if context.view_layer.objects.active in list(context.view_layer.objects.selected) else None
-                if obj and obj.type in validtypes:
-                    mat_list = list({mat.material for mat in obj.material_slots if mat.material is not None and not mat.material.is_grease_pencil})
-        return mat_list
+    mat_list = []
+    validtypes = ['SURFACE', 'CURVE', 'META', 'MESH']
+    match props().target:
+        case "selected_objects":
+            if len(context.view_layer.objects):
+                mat_list = list({mat.material for obj in context.view_layer.objects.selected if obj.type in validtypes for mat in obj.material_slots if mat.material is not None and not mat.material.is_grease_pencil})
+        case "all_visible":
+            if len(context.view_layer.objects):
+                mat_list = list({mat.material for obj in context.view_layer.objects if obj.visible_get() and obj.type in validtypes for mat in obj.material_slots if mat.material is not None and not mat.material.is_grease_pencil})
+        case "all_objects":
+            if len(bpy.data.objects):
+                mat_list = list({mat.material for obj in bpy.data.objects if obj.type in validtypes for mat in obj.material_slots if mat.material is not None and not mat.material.is_grease_pencil})
+        case "all_materials":
+            mat_list = [mat for mat in bpy.data.materials if not mat.is_grease_pencil]
+        case "active_obj":
+            obj = context.view_layer.objects.active if context.view_layer.objects.active in list(context.view_layer.objects.selected) else None
+            if obj and obj.type in validtypes:
+                mat_list = list({mat.material for mat in obj.material_slots if mat.material is not None and not mat.material.is_grease_pencil})
+    return mat_list
 
 def get_a_mat():
     mat = bpy.context.object.active_material if not bpy.context.object.active_material.is_grease_pencil else None
     if not mat:
-        mat = get_target_mats()[0] or [mat for mat in bpy.data.materials if not mat.is_grease_pencil][0] if [mat for mat in bpy.data.materials if not mat.is_grease_pencil] else None
+        mat = get_target_mats(bpy.context)[0] or [mat for mat in bpy.data.materials if not mat.is_grease_pencil][0] if [mat for mat in bpy.data.materials if not mat.is_grease_pencil] else None
     return mat
 
 def clean_input_sockets():
-    #required to avoid warning errors
     for line in lines():
         line['input_sockets'] = 0
         for ch in line.channels.socket:
@@ -342,13 +345,13 @@ def get_shader_inputs():
     return None
 
 def get_hard_sockets():
-        return [ "Base Color", "Metallic","Roughness","IOR", "Alpha",
-                "Normal", "Diffuse Roughness", "Subsurface Weight", "Subsurface Radius",
-                "Subsurface Scale", "Subsurface IOR","Subsurface Anisotropy","Specular IOR Level",
-                "Specular Tint","Anisotropic", "Anisotropic Rotation", "Tangent",
-                "Transmission Weight", "Coat Weight","Coat Roughness","Coat IOR", "Coat Tint",
-                "Coat Normal","Sheen Weight", "Sheen Roughness","Sheen Tint", "Emission Color",
-                "Emission Strength", "Thin Film Thickness", "Thin Film IOR" ]
+    return [ "Base Color", "Metallic","Roughness","IOR", "Alpha",
+            "Normal", "Diffuse Roughness", "Subsurface Weight", "Subsurface Radius",
+            "Subsurface Scale", "Subsurface IOR","Subsurface Anisotropy","Specular IOR Level",
+            "Specular Tint","Anisotropic", "Anisotropic Rotation", "Tangent",
+            "Transmission Weight", "Coat Weight","Coat Roughness","Coat IOR", "Coat Tint",
+            "Coat Normal","Sheen Weight", "Sheen Roughness","Sheen Tint", "Emission Color",
+            "Emission Strength", "Thin Film Thickness", "Thin Film IOR" ]
 
 def set_enum_sockets_items():
     rawdata = []
@@ -395,53 +398,53 @@ def sicks():
     return [sc[0] for sc in get_sockets_enum_items()]
 
 def find_in_sockets(term,target_list=None):
-        if term in "":
-            return None
-        if not target_list:
-            target_list = sicks()
-        for sock in target_list:
-            match = term.replace(" ", "").lower() in sock.replace(" ", "").lower()
-            if match:
-                return sock
+    if term in "":
         return None
+    if not target_list:
+        target_list = sicks()
+    for sock in target_list:
+        match = term.replace(" ", "").lower() in sock.replace(" ", "").lower()
+        if match:
+            return sock
+    return None
 
 def detect_multi_socket(line):
-        splitted = line.name.split(props().separators_list)
-        if not len(splitted) > 1 :
-            line['split_rgb'] = False
+    splitted = line.name.split(props().separators_list)
+    if not len(splitted) > 1 :
+        line['split_rgb'] = False
+        return False
+    line['split_rgb'] = True
+    if len(splitted) != 3 :
+        for i in range(3-len(splitted)):
+            splitted.append("no_socket")
+    for i,_sock in enumerate(splitted):
+        if i > 2:
             return False
-        line['split_rgb'] = True
-        if len(splitted) != 3 :
-            for i in range(3-len(splitted)):
-                splitted.append("no_socket")
-        for i,_sock in enumerate(splitted):
-            if i > 2:
-                return False
-            sock = find_in_sockets(_sock)
-            if not sock:
-                sock = check_special_keywords(_sock)
-                if not sock:
-                    sock = sicks()[0]
-                if sock in "bump" :
-                    sock = 'Normal'
-            if (sock in sicks() and line.auto_mode) or (not line.auto_mode and sock in 'no_socket'):
-                line.channels.socket[i]['input_sockets'] = sicks().index(sock)
-        return True
-
-def default_sockets(line):
-        if not line.auto_mode :
-            return
-        if detect_multi_socket(line):
-            return
-        sock = find_in_sockets(line.name)
+        sock = find_in_sockets(_sock)
         if not sock:
-            sock = check_special_keywords(line.name)
+            sock = check_special_keywords(_sock)
             if not sock:
                 sock = sicks()[0]
-            if "bump" in sock:
+            if sock in "bump" :
                 sock = 'Normal'
-        if sock in sicks():
-            line['input_sockets'] = sicks().index(sock)
+        if (sock in sicks() and line.auto_mode) or (not line.auto_mode and sock in 'no_socket'):
+            line.channels.socket[i]['input_sockets'] = sicks().index(sock)
+    return True
+
+def default_sockets(line):
+    if not line.auto_mode :
+        return
+    if detect_multi_socket(line):
+        return
+    sock = find_in_sockets(line.name)
+    if not sock:
+        sock = check_special_keywords(line.name)
+        if not sock:
+            sock = sicks()[0]
+        if "bump" in sock:
+            sock = 'Normal'
+    if sock in sicks():
+        line['input_sockets'] = sicks().index(sock)
 
 def find_file(line):
     if line.manual:
@@ -455,7 +458,6 @@ def find_file(line):
             if mat_name.lower() in map_file and map_name.lower() in map_file:
                 return str(Path(props().usr_dir).joinpath(Path(dir_content[lower_dir_content.index(map_file)])))
     return ""
-
 
 def detect_a_map(line):
     line.file_name = find_file(line)
@@ -478,9 +480,8 @@ def get_lines_count(self):
 
 def set_lines_count(self,val):
     lines().clear()
-    for i in range(val):
-        l = lines().add()
-        make_clean_channels(l)
+    for _ in range(val):
+        make_clean_channels(lines().add())
 
 def set_cb_include_ngroups(self,val):
     props()['include_ngroups'] = val
@@ -541,12 +542,6 @@ def set_cb_separators_list(self,val):
 
 def get_cb_separators_list(self):
     return props().separators_list
-
-def set_cb_lines_from_files(self,val):
-    props()['lines_from_files'] = val
-
-def get_cb_lines_from_files(self):
-    return props().lines_from_files
 
 def set_cb_advanced_mode(self,val):
     props()['advanced_mode'] = val
@@ -627,7 +622,6 @@ def draw_panel(self,context):
             sub_layout_2.enabled = not item.auto_mode and item.line_on
             sub_layout_2.prop(item, "input_sockets")
 
-
 def get_name_up(self):
     return self.get("name","")
 
@@ -670,8 +664,8 @@ def init_prefs(self):
             make_clean_channels(item)
     refresh_props(props(),bpy.context)
     self.liners.clear()
-    for line in lines():
-        l = self.liners.add()
+    for _ in lines():
+        self.liners.add()
 
 def line_on_up(self, context):
     default_sockets(self)
@@ -688,34 +682,8 @@ def target_list_cb(self,context):
 
 def target_list_up(self,context):
     match self.target:
-        case "selected_objects":
-            set_operator_description("selected objects materials.")
-        case "all_visible":
-            set_operator_description("all visible objects materials.")
-        case "all_objects":
-            set_operator_description("all objects materials in the current viewlayer.")
         case "all_materials":
-            set_operator_description("all the materials in the blend.")
             self.only_active_mat = False
-        case "active_obj":
-            pass
-
-def set_operator_description(target):
-    """
-    bpy.types.NODE_OT_stm_import_textures.bl_description = "Setup nodes and load textures\
-                                                            \n maps on " + target
-    bpy.types.NODE_OT_stm_make_nodes.bl_description = "Setup Nodes on " + target
-    bpy.types.NODE_OT_stm_assign_nodes.bl_description = "Load textures maps on " + target
-    liste = [
-        bpy.types.NODE_OT_stm_import_textures,
-        bpy.types.NODE_OT_stm_make_nodes,
-        bpy.types.NODE_OT_stm_assign_nodes
-    ]
-    for cls in liste:
-        laclasse = cls
-        unregister_class(cls)
-        register_class(laclasse)
-    """
 
 def split_rgb_up(self,context):
     if not (len(self.channels.socket) and len(self.channels.socket) == 3):
@@ -794,14 +762,11 @@ def ch_sockets_up(self, context):
 
 def shaders_list_cb(self, context):
     return get_shaders_list()
-    #else:
-    #    return [('ShaderNodeBsdfPrincipled', 'Principled BSDF', '')]
 
 def shaders_list_up(self, context):
     #forces rebuilding the sockets list
     self.replace_shader = not self.replace_shader
     self.replace_shader = not self.replace_shader
-
     context.view_layer.update()
 
 def manual_up(self, context):
@@ -818,8 +783,6 @@ def advanced_mode_up(self, context):
             line.manual = False
 
 def usr_dir_up(self, context):
-    if self.lines_from_files:
-        synch_names()
     self.dir_content = ""
     if not Path(self.usr_dir).is_dir():
         self.usr_dir = str(Path(self.usr_dir).parent)
@@ -887,36 +850,38 @@ def set_liners_bools(self,val):
     lines()[self.liners_id].line_bools = val
 
 def draw_options(self,context):
-    layout = self.layout
-    row = layout.row()
+    row = self.layout.row(align=True)
     row.alignment = 'LEFT'
-    row.prop(props(), "advanced_mode", text="Manual Mode ", )
-    row = layout.row()
-    col = row.column(align = True)
-    row = col.row(align = True)
-    row.prop(props(), "replace_shader", text="Replace Shader",)
-    row = row.split()
-    if props().replace_shader :
-        row.prop(props(), "shaders_list", text="")
-    row = layout.row()
-    row.prop(props(), "skip_normals", )
-    row = layout.row()
-    row.prop(props(), "mode_opengl", )
-    row = layout.row()
-    row.prop(props(), "include_ngroups", text="Enable Custom Shaders", )
-    row = layout.row()
-    row.prop(props(), "clear_nodes", text="Clear nodes from material", )
-    row = layout.row()
-    row.prop(props(), "tweak_levels", text="Attach Curves and Ramps ", )
-    row = layout.row()
-    row.prop(props(), "only_active_mat", text="Only active Material",)
-    row = layout.row()
-    row.prop(props(), "dup_mat_compatible", text="Duplicated material compatibility",)
-    row = layout.row()
-    row.prop(props(), "lines_from_files", text="Map names from files",)
-    row = layout.row()
-    row.prop(props(), "setup_nodes", text="Setup Nodes",)
-    row = layout.row()
-    row.prop(props(), "assign_images", text="Assign Images",)
-    row = layout.row()
-    row.separator()
+    row.prop(self, "show_options", text="Options" ,icon="TRIA_DOWN" if self.show_options else "TRIA_RIGHT", emboss=False )
+    if self.show_options:
+        layout = self.layout.box()
+        row = layout.row()
+        row.alignment = 'LEFT'
+        row.prop(props(), "advanced_mode", text="Manual Mode ", )
+        row = layout.row()
+        col = row.column(align = True)
+        row = col.row(align = True)
+        row.prop(props(), "replace_shader", text="Replace Shader",)
+        row = row.split()
+        if props().replace_shader :
+            row.prop(props(), "shaders_list", text="")
+        row = layout.row()
+        row.prop(props(), "skip_normals", )
+        row = layout.row()
+        row.prop(props(), "mode_opengl", )
+        row = layout.row()
+        row.prop(props(), "include_ngroups", text="Enable Custom Shaders", )
+        row = layout.row()
+        row.prop(props(), "clear_nodes", text="Clear nodes from material", )
+        row = layout.row()
+        row.prop(props(), "tweak_levels", text="Attach Curves and Ramps ", )
+        row = layout.row()
+        row.prop(props(), "only_active_mat", text="Only active Material",)
+        row = layout.row()
+        row.prop(props(), "dup_mat_compatible", text="Duplicated material compatibility",)
+        row = layout.row()
+        row.prop(props(), "setup_nodes", text="Setup Nodes",)
+        row = layout.row()
+        row.prop(props(), "assign_images", text="Assign Images",)
+        row = layout.row()
+        row.separator()

@@ -1,11 +1,12 @@
 import bpy
-from pathlib import Path
-from bpy.props import (StringProperty,IntProperty,BoolProperty,IntVectorProperty,BoolVectorProperty,EnumProperty,CollectionProperty)
+from bpy.props import (StringProperty,IntProperty,BoolProperty,IntVectorProperty,
+                        BoolVectorProperty,EnumProperty,CollectionProperty)
 from bpy.types import PropertyGroup
-from bpy.utils import (register_class,unregister_class)
-from . nodeshandler import NodeHandler
-from . functions import *
-#,props,node_links,lines,p_lines
+from . functions import (include_ngroups_up,clear_nodes_up,target_list_cb,target_list_up,
+                        usr_dir_up,get_liners_bools,set_liners_vals,get_liners_name,
+                        set_liners_name,set_liners_bools,get_liners_vals,
+                        replace_shader_up,shaders_list_cb,shaders_list_up,separators_cb,
+                        advanced_mode_up,only_active_mat_up)
 
 class StringItem(PropertyGroup):
 
@@ -149,12 +150,6 @@ class StmProps(PropertyGroup):
                         \n Adjust this to fit the separator character between your maps keywords.",
 
         items=separators_cb,
-    )
-    lines_from_files: BoolProperty(
-        description=" Attempt to auto rename the map lines names according to\
-                    \n the images names detected in the texture folder when updating the directory\
-                    \n if they match the current material name.",
-        default=True,
     )
     advanced_mode: BoolProperty(
         description=" Allows Manual setup of the Maps filenames, \

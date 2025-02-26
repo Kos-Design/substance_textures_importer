@@ -1,6 +1,11 @@
 import bpy
 from pathlib import Path
-from . functions import *
+from . functions import ( ShowMessageBox, check_special_keywords, detect_a_map, find_file,
+                        get_output_node, get_shader_node, get_target_mats, guess_sockets,
+                        line_index, mat_name_cleaner, node_links, p_lines, props,
+                        refresh_shader_links, safe_refresh, set_enum_sockets_items,
+                        set_nodes_groups, stm_nodes,get_a_mat
+                        )
 
 class MaterialHolder():
     def __init__(self):
@@ -163,22 +168,18 @@ class NodeHandler(MaterialHolder):
                         self.shader_node.node_tree = bpy.data.node_groups[substitute_shader]
                     elif not shader_node:
                         shader_node = stm_nodes().new(props().shaders_list)
-
             elif hasattr(bpy.types,substitute_shader) :
                 shader_node = stm_nodes().new(substitute_shader)
             shader_node.name = "STM_" + shader_node.name
             self.links.new(shader_node.outputs[0], self.output_node.inputs[0])
         if not (self.node_invalid(shader_node) or props().clear_nodes):
             self.copy_bsdf_parameters(get_shader_node(), shader_node)
-            #if props().replace_shader:
-            #    stm_nodes().remove(get_shader_node())
         self.shader_node = shader_node
 
     def check_mat(self):
         mat = get_a_mat()
         if not mat:
-            ShowMessageBox(f"No valid material found",
-                            'FAKE_USER_ON')
+            ShowMessageBox("No valid material found",'FAKE_USER_ON')
             return False
         self.mat = bpy.context.window_manager['current_mat'] = mat
         return True

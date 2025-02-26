@@ -1,6 +1,5 @@
-import bpy
 from bpy.types import Panel
-from . functions import draw_options,draw_panel,get_a_mat
+from . functions import get_a_mat
 
 class NODE_PT_stm_nodes_panel(Panel):
     bl_idname = "NODE_PT_stm_nodes_panel"

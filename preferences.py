@@ -1,11 +1,11 @@
 import bpy
-from bpy.props import (StringProperty, IntProperty, BoolProperty,IntVectorProperty,BoolVectorProperty,
-                        PointerProperty, CollectionProperty,EnumProperty)
+from bpy.props import (StringProperty, IntProperty, BoolProperty,IntVectorProperty,
+                       BoolVectorProperty, PointerProperty, CollectionProperty,EnumProperty)
 from bpy.types import (PropertyGroup, UIList,AddonPreferences)
 
-from . functions import (lines, enum_sockets_cb, auto_mode_up, ch_sockets_up, enum_sockets_up, manual_up,
-                                split_rgb_up, line_on_up, draw_panel,draw_options,get_name_up,set_name_up,
-                                get_line_bools,set_line_bools,get_line_vals,set_line_vals)
+from . functions import ( enum_sockets_cb, auto_mode_up, ch_sockets_up, enum_sockets_up, manual_up,
+                        split_rgb_up, line_on_up, get_name_up,set_name_up,
+                        get_line_bools,set_line_bools,get_line_vals,set_line_vals)
 
 from . propertygroups import (StmProps, NodesLinks, ShaderLinks)
 
@@ -141,7 +141,10 @@ class StmAddonPreferences(AddonPreferences):
 
     def draw(self, context):
         layout = self.layout
-        layout.operator('node.stm_surfacing_setup',text="Show Extension Panel")
+        row = layout.row()
+        row.prop(self.props, 'usr_dir',text="Textures folder:")
+        row = layout.row()
+        row.operator('node.stm_surfacing_setup',text="Show Extension Panel")
         row = layout.row()
         row.label(text="Separator used for multi-sockets: ")
         row.split(factor=10)
