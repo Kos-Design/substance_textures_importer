@@ -46,7 +46,8 @@ Installation:
 
 https://youtu.be/lumrnhikSOg
 
-`Download the latest git release of Substance Textures Importer from here <https://github.com/Kos-Design/substance_textures_importer/releases/download/0.7.0/Substance_Textures_Importer.zip>`__
+`Download the latest git release of Substance Textures Importer from here <https://github.com/Kos-Design/substance_textures_importer/releases/download/0.7.1/Substance_Textures_Importer.zip>`__
+or from `Blender Extensions Portal <https://extensions.blender.org/add-ons/substance-textures-importer/>`__
 and install it in Blender via Edit > Preferences > Add-ons > Install an Addon.
 
 Once installed, enable like the other add-ons by ticking the checkbox in front of “Substance Textures Importer”.
