@@ -431,6 +431,13 @@ def detect_multi_socket(line):
             line.channels.socket[i]['input_sockets'] = sicks().index(sock)
     return True
 
+def icon_name(idx):
+    icons = bpy.types.UILayout.bl_rna.functions['prop'].parameters['icon'].enum_items.keys()
+    if f"SEQUENCE_COLOR_0{((idx*3)%9+1)}" in icons:
+        return f"SEQUENCE_COLOR_0{((idx*3)%9+1)}"
+    else:
+        return f"STRIP_COLOR_0{((idx*3)%9+1)}"
+
 def default_sockets(line):
     if not line.auto_mode :
         return
@@ -610,7 +617,7 @@ def draw_panel(self,context):
                 sl = sub_sub_layout.column()
                 sl.enabled = not item.auto_mode and item.line_on
                 for i,sk in enumerate(item.channels.socket):
-                    sl.prop(sk, "input_sockets",text=sk.name,icon=f"SEQUENCE_COLOR_0{((i*3)%9+1)}")
+                    sl.prop(sk, "input_sockets",text=sk.name,icon=f"{icon_name(i)}")
         if props().advanced_mode :
             sub_sub_layout = sub_layout.column()
             sub_sub_layout.prop(item, "manual")

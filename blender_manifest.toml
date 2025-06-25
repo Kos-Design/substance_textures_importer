@@ -1,6 +1,6 @@
 schema_version = "1.0.0"
 id = "substance_textures_importer"
-version = "7.0.0"
+version = "7.1.0"
 name = "Substance Textures Importer"
 tagline = "Import & autoassign images from 3D painting tools like Substance"
 maintainer = "Cosmin Planchon <info@kosmin.fr>"

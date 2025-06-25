@@ -2,10 +2,9 @@ import bpy
 from bpy.props import (StringProperty, IntProperty, BoolProperty,IntVectorProperty,
                        BoolVectorProperty, PointerProperty, CollectionProperty,EnumProperty)
 from bpy.types import (PropertyGroup, UIList,AddonPreferences)
-
 from . propertygroups import (StmProps, NodesLinks, ShaderLinks, StmChannelSocket,StmShaders,
                                StmChannelSockets,StmPanelLines, StmPanelLiner, StmNodes)
-
+from . functions import icon_name
 
 class NODE_UL_stm_list(UIList):
     """
@@ -19,7 +18,7 @@ class NODE_UL_stm_list(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if item:
             layout.prop(item, "name", text="", emboss=False,
-                        icon=f"SEQUENCE_COLOR_0{((index+3)%9+1)}")
+                        icon=f"{icon_name(index)}")
 
 
 class StmAddonPreferences(AddonPreferences):

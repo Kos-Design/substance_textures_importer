@@ -3,7 +3,7 @@ import bpy
 bl_info = {
     "name": "Substance Textures Importer",
     "author": "Cosmin Planchon",
-    "version": (0, 7, 0),
+    "version": (0, 7, 1),
     "blender": (4, 2, 0),
     "location": "File > Import > Substance Textures",
     "description": "Import & autoassign images from Substance or similar 3D painting tools",
