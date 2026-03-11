@@ -589,7 +589,7 @@ def draw_panel(self,context):
         "NODE_UL_stm_list", "Textures",
         texture_importer(), "textures",
         texture_importer(), "texture_index",
-        type="GRID",
+        type="DEFAULT",
         columns=1,
         rows=6,
     )
